@@ -1,0 +1,37 @@
+[
+  {
+    "name": "IT",
+    "description": "Information Technology - systems, infrastructure, applications",
+    "typical_synergies": "Cloud consolidation, vendor optimization, headcount reduction, data center consolidation"
+  },
+  {
+    "name": "HR",
+    "description": "Human Resources - recruiting, benefits, payroll, talent management",
+    "typical_synergies": "Benefits harmonization, shared services, HRIS consolidation, headcount optimization"
+  },
+  {
+    "name": "Finance",
+    "description": "Financial operations - accounting, treasury, FP&A, tax",
+    "typical_synergies": "AP/AR consolidation, treasury optimization, systems consolidation, working capital"
+  },
+  {
+    "name": "Sales",
+    "description": "Sales operations - CRM, territories, compensation, pipeline",
+    "typical_synergies": "Cross-selling, territory optimization, CRM consolidation, sales force optimization"
+  },
+  {
+    "name": "Operations",
+    "description": "Operations - manufacturing, supply chain, facilities, logistics",
+    "typical_synergies": "Manufacturing footprint, supply chain consolidation, facilities optimization"
+  },
+  {
+    "name": "Legal",
+    "description": "Legal department - contracts, compliance, IP, litigation",
+    "typical_synergies": "Contract management, compliance consolidation, shared services"
+  },
+  {
+    "name": "R&D",
+    "description": "Research & Development - product development, innovation, labs",
+    "typical_synergies": "Product roadmap consolidation, facility optimization, talent retention"
+  }
+]

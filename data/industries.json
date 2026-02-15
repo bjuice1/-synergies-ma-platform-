@@ -1,0 +1,27 @@
+[
+  {
+    "name": "Healthcare",
+    "characteristics": "Hospitals, pharma, medical devices, health insurance",
+    "common_synergies": "EHR consolidation, clinical systems, pharmacy benefits, medical device rationalization"
+  },
+  {
+    "name": "Technology",
+    "characteristics": "SaaS, hardware, IT services, software development",
+    "common_synergies": "Cloud infrastructure, data center, R&D consolidation, product roadmap rationalization"
+  },
+  {
+    "name": "Financial Services",
+    "characteristics": "Banking, insurance, fintech, asset management",
+    "common_synergies": "Branch consolidation, trading systems, regulatory compliance, treasury operations"
+  },
+  {
+    "name": "Manufacturing",
+    "characteristics": "Discrete and process manufacturing, industrial equipment",
+    "common_synergies": "Plant footprint, supply chain, procurement, distribution networks"
+  },
+  {
+    "name": "Retail",
+    "characteristics": "Brick-and-mortar, e-commerce, specialty retail",
+    "common_synergies": "Store footprint, e-commerce platforms, merchandising systems, supply chain"
+  }
+]
