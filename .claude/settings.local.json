@@ -8,7 +8,16 @@
       "Bash(source:*)",
       "Bash(pip install:*)",
       "Bash(python -m pytest:*)",
-      "Bash(git init:*)"
+      "Bash(git init:*)",
+      "Bash(curl:*)",
+      "Bash(sh)",
+      "Bash(/Applications/Ollama.app/Contents/Resources/ollama:*)",
+      "Bash(open:*)",
+      "Bash(export PATH=\"/Applications/Ollama.app/Contents/Resources:$PATH\")",
+      "Bash(ollama list:*)",
+      "Bash(ollama pull:*)",
+      "Bash(ollama search:*)",
+      "Bash(docker build:*)"
     ]
   }
 }

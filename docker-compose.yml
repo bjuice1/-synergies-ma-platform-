@@ -1,0 +1,66 @@
+# Docker Compose for safe autonomous operation
+version: '3.8'
+
+services:
+  synergies-builder:
+    build: .
+    container_name: synergies-autonomous
+
+    # Security settings
+    security_opt:
+      - no-new-privileges:true  # Prevent privilege escalation
+    read_only: false  # Need to write to /workspace
+
+    # Resource limits
+    mem_limit: 4g
+    cpus: 2.0
+    pids_limit: 100
+
+    # Volume mounts - ONLY /workspace
+    volumes:
+      - type: bind
+        source: .
+        target: /workspace
+        read_only: false
+      # Everything else on host is INACCESSIBLE
+
+    # Working directory
+    working_dir: /workspace
+
+    # User (non-root)
+    user: "1000:1000"
+
+    # Network - allow internet for research
+    # (But container can't see other containers or host)
+    network_mode: bridge
+
+    # Environment
+    environment:
+      - PYTHONUNBUFFERED=1
+      - WORKSPACE=/workspace
+
+    # Prevent container from accessing host
+    cap_drop:
+      - ALL
+    cap_add:
+      - NET_BIND_SERVICE  # Only if needed
+
+    # No access to host devices
+    devices: []
+
+    # Tmpfs for /tmp (doesn't persist)
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=1g
+
+    # Healthcheck
+    healthcheck:
+      test: ["CMD", "python", "-c", "import os; assert os.path.exists('/workspace')"]
+      interval: 5m
+      timeout: 3s
+      retries: 3
+
+    # Restart policy
+    restart: "no"  # Don't auto-restart if it crashes
+
+    # Command (will be overridden when running)
+    command: /bin/bash
