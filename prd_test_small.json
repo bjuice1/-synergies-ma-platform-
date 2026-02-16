@@ -1,0 +1,39 @@
+{
+  "project_name": "Synergies - Guarded V3 Test",
+  "description": "Small test build to demonstrate invariant enforcement",
+  "tasks": [
+    {
+      "id": 1,
+      "title": "Add a simple utility function",
+      "description": "Create backend/app/utils/text_helpers.py with a function to capitalize words. This is a simple, safe task to test basic file creation.",
+      "passes": false,
+      "priority": "P2"
+    },
+    {
+      "id": 2,
+      "title": "Add a unit test for text helpers",
+      "description": "Create tests/test_text_helpers.py that imports and tests the capitalize function from backend.app.utils.text_helpers",
+      "passes": false,
+      "priority": "P2"
+    },
+    {
+      "id": 3,
+      "title": "Add a simple logging decorator",
+      "description": "Create backend/app/decorators/logging_decorator.py with a @log_execution decorator that logs function calls",
+      "passes": false,
+      "priority": "P2"
+    }
+  ],
+  "acceptance_criteria": [
+    "All files created in correct locations",
+    "All imports use canonical backend.app.* prefix",
+    "Drift detection runs after every task",
+    "No architectural drift detected"
+  ],
+  "constraints": [
+    "DO NOT create new package roots",
+    "DO NOT create duplicate models",
+    "USE canonical import prefix: backend.app.*",
+    "KEEP all code in backend/app/ directory structure"
+  ]
+}
