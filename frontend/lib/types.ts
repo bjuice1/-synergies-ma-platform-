@@ -21,6 +21,10 @@ export interface Synergy {
   category?: Category;
   source_entity?: Entity;
   target_entity?: Entity;
+  // Business Intelligence extensions
+  current_workflow_state?: WorkflowState;
+  workflow_transitions?: WorkflowTransition[];
+  metrics?: SynergyMetric[];
 }
 
 export interface Entity {
@@ -145,4 +149,43 @@ export interface TimelineDataPoint {
   date: string;
   value: number;
   label?: string;
+}
+
+// Workflow Types
+export type WorkflowState = "draft" | "review" | "approved" | "realized" | "rejected";
+export type WorkflowAction = "submit" | "approve" | "reject" | "realize" | "return_to_draft";
+
+export interface WorkflowTransition {
+  id: number;
+  synergy_id: number;
+  from_state: WorkflowState;
+  to_state: WorkflowState;
+  action: WorkflowAction;
+  user_id: number;
+  user_email: string;
+  comment: string | null;
+  created_at: string;
+}
+
+// Metrics Types
+export interface SynergyMetric {
+  id: number;
+  synergy_id: number;
+  metric_type: string;
+  category: string;
+  line_item: string;
+  value: number;
+  unit: string;
+  description: string;
+  confidence: "high" | "medium" | "low";
+  assumption: string;
+  data_source: string;
+  created_at: string;
+}
+
+export interface SynergyMetricsResponse {
+  synergy_id: number;
+  total_value_low: number;
+  total_value_high: number;
+  metrics: SynergyMetric[];
 }

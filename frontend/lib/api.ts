@@ -10,6 +10,8 @@ import type {
   CreateSynergyInput,
   UpdateSynergyInput,
   SynergyFilters,
+  WorkflowTransition,
+  SynergyMetricsResponse,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
@@ -155,6 +157,22 @@ export const entitiesApi = {
 
   getById: async (id: number): Promise<Entity> => {
     const response = await api.get<Entity>(`/entities/${id}`);
+    return response.data;
+  },
+};
+
+// Workflow API
+export const workflowApi = {
+  getTransitions: async (synergyId: number): Promise<WorkflowTransition[]> => {
+    const response = await api.get<WorkflowTransition[]>(`/synergies/${synergyId}/workflow`);
+    return response.data;
+  },
+};
+
+// Metrics API
+export const metricsApi = {
+  getMetrics: async (synergyId: number): Promise<SynergyMetricsResponse> => {
+    const response = await api.get<SynergyMetricsResponse>(`/synergies/${synergyId}/metrics`);
     return response.data;
   },
 };

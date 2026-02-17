@@ -80,6 +80,40 @@
   .font-mono-numbers {
     font-variant-numeric: tabular-nums;
   }
+
+  /* Workflow-specific glass variants */
+  .glass-workflow-draft {
+    @apply bg-slate-500/5 border-slate-500/20;
+  }
+
+  .glass-workflow-review {
+    @apply bg-blue-500/5 border-blue-500/20;
+  }
+
+  .glass-workflow-approved {
+    @apply bg-emerald-500/5 border-emerald-500/20;
+  }
+
+  .glass-workflow-realized {
+    @apply bg-green-500/5 border-green-500/20;
+  }
+
+  .glass-workflow-rejected {
+    @apply bg-red-500/5 border-red-500/20;
+  }
+
+  /* Metric confidence levels */
+  .glass-confidence-high {
+    @apply bg-emerald-500/5 border-emerald-500/20;
+  }
+
+  .glass-confidence-medium {
+    @apply bg-amber-500/5 border-amber-500/20;
+  }
+
+  .glass-confidence-low {
+    @apply bg-red-500/5 border-red-500/20;
+  }
 }
 
 /* Custom scrollbar */
