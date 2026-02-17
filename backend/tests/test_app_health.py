@@ -46,17 +46,13 @@ def test_blueprints_registered(app):
     assert 'auth' in blueprint_names, 'Auth blueprint must be registered'
 
 def test_models_importable(app):
-    """Test that models can be imported without conflicts."""
+    """Test that models can be imported from canonical location."""
     with app.app_context():
         try:
             from backend.app.models.user import User
             assert User is not None
-        except ImportError:
-            try:
-                from backend.models import User
-                assert User is not None
-            except ImportError as e:
-                pytest.fail(f'Could not import User model: {e}')
+        except ImportError as e:
+            pytest.fail(f'Could not import User model from canonical location: {e}')
 
 def test_db_models_metadata(app):
     """Test that database models are properly defined."""
