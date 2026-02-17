@@ -1,5 +1,6 @@
 'use client';
 
+import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { formatCompactNumber, getStatusColor, getConfidenceColor } from '@/lib/utils';
@@ -12,8 +13,17 @@ interface SynergyCardProps {
 }
 
 export function SynergyCard({ synergy, onEdit, onDelete }: SynergyCardProps) {
+  const router = useRouter();
+
+  const handleCardClick = () => {
+    router.push(`/synergies/${synergy.id}`);
+  };
+
   return (
-    <Card className="glass-card border-white/10 bg-white/5 backdrop-blur-lg hover:bg-white/10 transition-all duration-300">
+    <Card
+      className="glass-card border-white/10 bg-white/5 backdrop-blur-lg hover:bg-white/10 transition-all duration-300 cursor-pointer"
+      onClick={handleCardClick}
+    >
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">
@@ -53,7 +63,10 @@ export function SynergyCard({ synergy, onEdit, onDelete }: SynergyCardProps) {
               <Button
                 size="sm"
                 variant="outline"
-                onClick={() => onEdit(synergy)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onEdit(synergy);
+                }}
                 className="bg-white/10 border-white/20 text-white hover:bg-white/20"
               >
                 Edit
@@ -63,7 +76,10 @@ export function SynergyCard({ synergy, onEdit, onDelete }: SynergyCardProps) {
               <Button
                 size="sm"
                 variant="destructive"
-                onClick={() => onDelete(synergy.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onDelete(synergy.id);
+                }}
                 className="bg-red-500/20 border-red-500/20 text-red-300 hover:bg-red-500/30"
               >
                 Delete

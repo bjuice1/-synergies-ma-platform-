@@ -6,6 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useSynergies } from '@/hooks/useSynergies';
 import { StatCard } from '@/components/dashboard/StatCard';
 import { RecentSynergies } from '@/components/dashboard/RecentSynergies';
+import { WorkflowOverview } from '@/components/dashboard/WorkflowOverview';
 import { StatusChart } from '@/components/charts/StatusChart';
 import { formatCompactNumber } from '@/lib/utils';
 
@@ -199,6 +200,11 @@ export default function DashboardPage() {
                 </svg>
               }
             />
+          </div>
+
+          {/* Workflow Overview */}
+          <div className="mb-8">
+            <WorkflowOverview synergies={synergies} />
           </div>
 
           {/* Charts and Recent Synergies */}
