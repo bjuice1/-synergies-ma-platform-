@@ -11,20 +11,20 @@ interface RecentSynergiesProps {
 
 export function RecentSynergies({ synergies }: RecentSynergiesProps) {
   return (
-    <Card className="glass-card border-white/20 bg-white/10 backdrop-blur-md">
+    <Card className="glass-card border-white/10 bg-white/5 backdrop-blur-lg">
       <CardHeader>
         <CardTitle className="text-white">Recent Synergies</CardTitle>
       </CardHeader>
       <CardContent>
         <div className="space-y-3">
           {synergies.length === 0 ? (
-            <p className="text-center text-gray-400 py-8">No synergies found</p>
+            <p className="text-center text-gray-500 py-8">No synergies found</p>
           ) : (
             synergies.map((synergy) => (
               <Link
                 key={synergy.id}
                 href={`/synergies/${synergy.id}`}
-                className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/10 transition-all duration-200"
+                className="block p-4 rounded-lg bg-white/5 hover:bg-white/10 border border-white/5 transition-all duration-200"
               >
                 <div className="flex items-start justify-between">
                   <div className="flex-1 min-w-0">

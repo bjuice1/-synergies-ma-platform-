@@ -24,7 +24,7 @@ export function IndustryChart({ synergies }: IndustryChartProps) {
   const chartData = Object.values(industryData).sort((a, b) => b.value - a.value);
 
   return (
-    <Card className="glass-card border-white/20 bg-white/10 backdrop-blur-md">
+    <Card className="glass-card border-white/10 bg-white/5 backdrop-blur-lg">
       <CardHeader>
         <CardTitle className="text-white">Value by Industry</CardTitle>
       </CardHeader>

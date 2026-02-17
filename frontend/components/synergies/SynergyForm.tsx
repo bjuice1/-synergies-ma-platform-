@@ -68,7 +68,7 @@ export function SynergyForm({ open, onOpenChange, onSubmit, synergy, loading }: 
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-2xl bg-slate-900 border-white/20 text-white">
+      <DialogContent className="max-w-2xl bg-slate-950/95 backdrop-blur-xl border-white/10 text-white">
         <DialogHeader>
           <DialogTitle>{synergy ? 'Edit Synergy' : 'Create New Synergy'}</DialogTitle>
         </DialogHeader>

@@ -12,7 +12,7 @@ interface SynergyFiltersProps {
 
 export function SynergyFiltersComponent({ filters, onFiltersChange }: SynergyFiltersProps) {
   return (
-    <div className="glass-card border-white/20 bg-white/10 backdrop-blur-md p-6 mb-6">
+    <div className="glass-card border-white/10 bg-white/5 backdrop-blur-lg p-6 mb-6">
       <h3 className="text-lg font-semibold text-white mb-4">Filters</h3>
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
         {/* Search */}

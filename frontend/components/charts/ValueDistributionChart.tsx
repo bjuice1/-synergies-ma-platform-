@@ -36,7 +36,7 @@ export function ValueDistributionChart({ synergies }: ValueDistributionChartProp
   };
 
   return (
-    <Card className="glass-card border-white/20 bg-white/10 backdrop-blur-md">
+    <Card className="glass-card border-white/10 bg-white/5 backdrop-blur-lg">
       <CardHeader>
         <CardTitle className="text-white">Value Distribution</CardTitle>
       </CardHeader>

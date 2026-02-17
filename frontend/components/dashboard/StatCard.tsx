@@ -43,11 +43,11 @@ export function StatCard({ title, value, description, icon, trend, className }: 
   }, [value]);
 
   return (
-    <Card className={cn('glass-card border-white/20 bg-white/10 backdrop-blur-md hover:bg-white/15 transition-all duration-300', className)}>
+    <Card className={cn('glass-card border-white/10 bg-white/5 backdrop-blur-lg hover:bg-white/10 transition-all duration-300', className)}>
       <CardContent className="p-6">
         <div className="flex items-center justify-between">
           <div className="flex-1">
-            <p className="text-sm font-medium text-gray-300">{title}</p>
+            <p className="text-sm font-medium text-gray-400">{title}</p>
             <div className="mt-2 flex items-baseline gap-2">
               <h3 className="text-3xl font-bold text-white font-mono-numbers">
                 {typeof value === 'number' ? displayValue.toLocaleString() : value}
@@ -56,7 +56,7 @@ export function StatCard({ title, value, description, icon, trend, className }: 
                 <span
                   className={cn(
                     'text-sm font-medium',
-                    trend.isPositive ? 'text-emerald-400' : 'text-red-400'
+                    trend.isPositive ? 'text-emerald-400' : 'text-rose-400'
                   )}
                 >
                   {trend.isPositive ? '↑' : '↓'} {Math.abs(trend.value)}%
@@ -64,12 +64,12 @@ export function StatCard({ title, value, description, icon, trend, className }: 
               )}
             </div>
             {description && (
-              <p className="mt-2 text-sm text-gray-400">{description}</p>
+              <p className="mt-2 text-sm text-gray-500">{description}</p>
             )}
           </div>
           {icon && (
             <div className="ml-4 flex-shrink-0">
-              <div className="rounded-full bg-white/10 p-3 text-emerald-400">
+              <div className="rounded-full bg-emerald-500/10 p-3 text-emerald-400">
                 {icon}
               </div>
             </div>

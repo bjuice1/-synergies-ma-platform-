@@ -13,7 +13,7 @@ interface SynergyCardProps {
 
 export function SynergyCard({ synergy, onEdit, onDelete }: SynergyCardProps) {
   return (
-    <Card className="glass-card border-white/20 bg-white/10 backdrop-blur-md hover:bg-white/15 transition-all duration-300">
+    <Card className="glass-card border-white/10 bg-white/5 backdrop-blur-lg hover:bg-white/10 transition-all duration-300">
       <CardContent className="p-6">
         <div className="flex items-start justify-between mb-4">
           <div className="flex-1">

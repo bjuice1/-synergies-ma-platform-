@@ -42,11 +42,12 @@ export default function AnalyticsPage() {
   const realizedCount = synergies.filter((s) => s.status === 'REALIZED').length;
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       {/* Animated background */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute w-96 h-96 -top-48 -left-48 bg-purple-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-blob"></div>
-        <div className="absolute w-96 h-96 -bottom-48 -right-48 bg-emerald-500 rounded-full mix-blend-multiply filter blur-xl opacity-10 animate-blob animation-delay-2000"></div>
+        <div className="absolute w-96 h-96 -top-48 -left-48 bg-blue-500/20 rounded-full mix-blend-screen filter blur-3xl animate-blob"></div>
+        <div className="absolute w-96 h-96 -bottom-48 -right-48 bg-emerald-500/20 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-2000"></div>
+        <div className="absolute w-96 h-96 top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 bg-violet-500/10 rounded-full mix-blend-screen filter blur-3xl animate-blob animation-delay-4000"></div>
       </div>
 
       {/* Content */}
@@ -125,7 +126,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Insights Card */}
-            <div className="glass-card border-white/20 bg-white/10 backdrop-blur-md p-6">
+            <div className="glass-card border-white/10 bg-white/5 backdrop-blur-lg p-6">
               <h3 className="text-xl font-semibold text-white mb-4">Key Insights</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="bg-white/5 rounded-lg p-4 border border-white/10">
