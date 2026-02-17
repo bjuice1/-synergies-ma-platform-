@@ -5,11 +5,11 @@ Creates and configures the Flask application instance.
 """
 import os
 from flask import Flask
-from flask_sqlalchemy import SQLAlchemy
 from flask_cors import CORS
 from dotenv import load_dotenv
+from backend.extensions import db, jwt
+
 load_dotenv()
-db = SQLAlchemy()
 
 def create_app(config_name=None):
     """
@@ -45,6 +45,7 @@ def create_app(config_name=None):
                 )
 
     db.init_app(app)
+    jwt.init_app(app)
     CORS(app, origins=app.config.get('CORS_ORIGINS', '*'))
 
     # Register blueprints
@@ -55,8 +56,23 @@ def create_app(config_name=None):
     app.register_blueprint(synergies_bp)
     app.register_blueprint(industries_bp)
 
-    # NOTE: db.create_all() commented out - use Alembic migrations instead
-    # with app.app_context():
-    #     db.create_all()
+    # Create tables on startup (for development)
+    with app.app_context():
+        # Import all models to register them with SQLAlchemy
+        from backend.app.models import (
+            User, Organization, Assessment, AssessmentQuestion, AssessmentResponse,
+            LearningPath, LearningPathItem, Resource
+        )
+        from backend.app.models.synergy import Synergy, SynergyMetric
+        from backend.app.models.industry import Industry
+        from backend.app.models.company import Company
+        from backend.app.models.function import Function
+        from backend.app.models.category import Category
+        from backend.app.models.activity import Activity
+        from backend.app.models.comment import Comment
+        from backend.app.models.mention import Mention
+
+        db.create_all()
+        print(f"✅ Created {len(db.metadata.tables)} tables")
 
     return app

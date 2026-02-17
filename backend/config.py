@@ -18,6 +18,7 @@ class Config:
 
 class DevelopmentConfig(Config):
     DEBUG = True
+    SQLALCHEMY_DATABASE_URI = os.getenv('DATABASE_URL', 'sqlite:////Users/JB/Documents/Synergies/backend/dev.db')
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY', 'dev-secret-key-please-change')
 
 class ProductionConfig(Config):
