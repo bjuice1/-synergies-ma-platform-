@@ -76,6 +76,8 @@ export function getStatusColor(status: string): string {
 
 // Get confidence level color
 export function getConfidenceColor(level: string): string {
+  if (!level) return 'text-gray-600 dark:text-gray-400';
+
   switch (level.toLowerCase()) {
     case 'high':
       return 'text-green-600 dark:text-green-400';
