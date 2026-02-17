@@ -57,3 +57,45 @@ Thumbs.db
 
 # Migrations (generated)
 migrations/versions/*.pyc
+
+# Logs and temporary files
+*.log
+*.output
+*.backup
+*.bak
+*.bak2
+backup_*/
+*_archived_*/
+STOP_NOW
+
+# Project working files
+drift_history.json
+project_map.json
+CHECKPOINT*.json
+COST*.json
+PROGRESS.json
+progress.txt
+*.backup.txt
+prd.json.backup
+requirements.txt.backup
+
+# Documentation (working files)
+AUTONOMOUS*.md
+AUTOFIX*.md
+BUILD*.log
+BULLY*.md
+GUARD*.md
+MONITOR*.md
+V3*.md
+OVERNIGHT*.log
+SESSION*.log
+*_run.log
+*.excalidraw
+
+# Test files
+test_*.py
+live_demo.py
+
+# Node modules at root
+node_modules/
+package-lock.json
