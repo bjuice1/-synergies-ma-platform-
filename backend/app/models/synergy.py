@@ -30,9 +30,12 @@ class Synergy(db.Model):
     industry_id = db.Column(db.Integer, db.ForeignKey('industries.id'), nullable=True, index=True)
     function_id = db.Column(db.Integer, db.ForeignKey('functions.id'), nullable=True, index=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True, index=True)
+    deal_id = db.Column(db.Integer, db.ForeignKey('deals.id'), nullable=True, index=True)
     synergy_type = db.Column(db.String(50), nullable=False, index=True)
     description = db.Column(db.Text, nullable=False)
-    estimated_value = db.Column(db.Float)
+    value_low = db.Column(db.BigInteger, nullable=True)  # Lower bound of value range
+    value_high = db.Column(db.BigInteger, nullable=True)  # Upper bound of value range
+    estimated_value = db.Column(db.BigInteger, nullable=True)  # Kept for backward compatibility
     confidence_score = db.Column(db.Float)
     status = db.Column(db.String(20), nullable=False, default='identified', index=True)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
@@ -68,6 +71,13 @@ class Synergy(db.Model):
         cascade='all, delete-orphan'
     )
 
+    workflow_transitions = db.relationship(
+        'WorkflowTransition',
+        back_populates='synergy',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+
     # Constraints
     __table_args__ = (
         db.CheckConstraint('company1_id != company2_id', name='different_companies'),
@@ -85,16 +95,19 @@ class Synergy(db.Model):
             'company2_id': self.company2_id,
             'synergy_type': self.synergy_type,
             'description': self.description,
+            'value_low': self.value_low,
+            'value_high': self.value_high,
             'estimated_value': self.estimated_value,
             'confidence_score': self.confidence_score,
             'status': self.status,
+            'deal_id': self.deal_id,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }
-        
+
         if include_metrics:
             data['metrics'] = [metric.to_dict() for metric in self.metrics]
-        
+
         return data
 
 
