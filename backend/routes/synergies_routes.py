@@ -1,11 +1,9 @@
 """API routes for synergy management."""
 from flask import Blueprint, request, jsonify
-from backend.repositories.synergy_repository import SynergyRepository
+from backend.app.models.synergy import Synergy
 from backend.utils.auth_decorators import require_role
 
 bp = Blueprint('synergies', __name__, url_prefix='/api/synergies')
-# TODO: Fix repository instantiation - needs session
-# synergy_repo = SynergyRepository()
 
 
 @bp.route('', methods=['GET'])
@@ -13,31 +11,40 @@ bp = Blueprint('synergies', __name__, url_prefix='/api/synergies')
 def get_synergies():
     """
     Get all synergies with optional filtering.
-    
+
     Query Parameters:
-        source_entity_id: Filter by source entity
-        target_entity_id: Filter by target entity
-        synergy_type: Filter by type (cost, revenue, operational)
-    
+        company1_id: Filter by first company
+        company2_id: Filter by second company
+        synergy_type: Filter by type (cost_reduction, revenue_enhancement, etc.)
+        industry_id: Filter by industry
+        status: Filter by status
+
     Authorization:
         Roles: viewer, analyst, admin
-    
+
     Returns:
         200: List of synergies
     """
-    filters = {}
-    
-    if request.args.get('source_entity_id'):
-        filters['source_entity_id'] = int(request.args.get('source_entity_id'))
-    
-    if request.args.get('target_entity_id'):
-        filters['target_entity_id'] = int(request.args.get('target_entity_id'))
-    
+    query = Synergy.query
+
+    # Apply filters
+    if request.args.get('company1_id'):
+        query = query.filter_by(company1_id=int(request.args.get('company1_id')))
+
+    if request.args.get('company2_id'):
+        query = query.filter_by(company2_id=int(request.args.get('company2_id')))
+
     if request.args.get('synergy_type'):
-        filters['synergy_type'] = request.args.get('synergy_type')
-    
-    synergies = synergy_repo.find_by(**filters) if filters else synergy_repo.find_all()
-    
+        query = query.filter_by(synergy_type=request.args.get('synergy_type'))
+
+    if request.args.get('industry_id'):
+        query = query.filter_by(industry_id=int(request.args.get('industry_id')))
+
+    if request.args.get('status'):
+        query = query.filter_by(status=request.args.get('status'))
+
+    synergies = query.all()
+
     return jsonify([synergy.to_dict() for synergy in synergies]), 200
 
 
@@ -46,20 +53,20 @@ def get_synergies():
 def get_synergy(synergy_id):
     """
     Get a single synergy by ID.
-    
+
     Authorization:
         Roles: viewer, analyst, admin
-    
+
     Returns:
         200: Synergy details
         404: Synergy not found
     """
-    synergy = synergy_repo.find_by_id(synergy_id)
-    
+    synergy = Synergy.query.get(synergy_id)
+
     if not synergy:
         return jsonify({'error': 'Synergy not found'}), 404
-    
-    return jsonify(synergy.to_dict()), 200
+
+    return jsonify(synergy.to_dict(include_metrics=True)), 200
 
 
 @bp.route('', methods=['POST'])

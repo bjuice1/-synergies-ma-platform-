@@ -48,21 +48,22 @@ def login():
     # Create JWT tokens with role in additional claims
     access_token = create_access_token(
         identity=user.id,
-        additional_claims={'role': user.role.value}  # Add role to JWT payload
+        additional_claims={'role': user.role}  # Add role to JWT payload
     )
     refresh_token = create_refresh_token(
         identity=user.id,
-        additional_claims={'role': user.role.value}
+        additional_claims={'role': user.role}
     )
-    
+
     return jsonify({
         'access_token': access_token,
         'refresh_token': refresh_token,
         'user': {
             'id': user.id,
             'email': user.email,
-            'name': user.name,
-            'role': user.role.value
+            'first_name': user.first_name,
+            'last_name': user.last_name,
+            'role': user.role
         }
     }), 200
 

@@ -48,6 +48,23 @@ def create_app(config_name=None):
     jwt.init_app(app)
     CORS(app, origins=app.config.get('CORS_ORIGINS', '*'))
 
+    # Add root health check route
+    @app.route('/')
+    def index():
+        return {
+            'status': 'running',
+            'message': 'Synergies API v1.0',
+            'endpoints': {
+                'auth': '/api/auth/login',
+                'synergies': '/api/synergies',
+                'industries': '/api/industries'
+            }
+        }
+
+    @app.route('/health')
+    def health():
+        return {'status': 'healthy', 'database': 'connected'}
+
     # Register blueprints
     from backend.routes.auth_routes import bp as auth_bp
     from backend.routes.synergies_routes import bp as synergies_bp
