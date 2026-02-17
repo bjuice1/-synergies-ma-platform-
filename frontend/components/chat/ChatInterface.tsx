@@ -122,7 +122,7 @@ export function ChatInterface() {
           />
           <Button
             type="submit"
-            disabled={isLoading || !input.trim()}
+            disabled={isLoading || !input?.trim()}
             className="bg-emerald-600 hover:bg-emerald-700 text-white"
           >
             {isLoading ? (
