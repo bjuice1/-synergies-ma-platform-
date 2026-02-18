@@ -59,7 +59,12 @@ def create_app(config_name=None):
         # Validate production config
         if config_name == 'production':
             logger.info("Validating production config...")
+            logger.info(f"DEBUG: FLASK_ENV={os.getenv('FLASK_ENV')}")
+            logger.info(f"DEBUG: JWT_SECRET_KEY env var set: {bool(os.getenv('JWT_SECRET_KEY'))}")
+            logger.info(f"DEBUG: JWT_SECRET_KEY in config: {bool(app.config.get('JWT_SECRET_KEY'))}")
+            logger.info(f"DEBUG: DATABASE_URL set: {bool(os.getenv('DATABASE_URL'))}")
             if not app.config.get('JWT_SECRET_KEY'):
+                logger.error(f"❌ JWT_SECRET_KEY is None or empty. Environment variable: {os.getenv('JWT_SECRET_KEY')}")
                 raise ValueError(
                     "JWT_SECRET_KEY must be set in production environment. "
                     "Set the JWT_SECRET_KEY environment variable."
