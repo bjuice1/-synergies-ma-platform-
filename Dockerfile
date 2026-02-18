@@ -37,9 +37,5 @@ ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
     HOME=/workspace
 
-# Copy entrypoint script
-COPY --chown=synergies:synergies docker-entrypoint.sh /workspace/
-RUN chmod +x /workspace/docker-entrypoint.sh
-
-# Run entrypoint script which handles PORT variable
-CMD ["/bin/bash", "/workspace/docker-entrypoint.sh"]
+# Run gunicorn directly with shell form to expand $PORT
+CMD gunicorn backend.app:create_app --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 4 --timeout 120 --log-level debug --access-logfile - --error-logfile -
