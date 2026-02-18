@@ -42,4 +42,4 @@ COPY --chown=synergies:synergies docker-entrypoint.sh /workspace/
 RUN chmod +x /workspace/docker-entrypoint.sh
 
 # Run entrypoint script which handles PORT variable
-CMD ["/workspace/docker-entrypoint.sh"]
+CMD ["/bin/bash", "/workspace/docker-entrypoint.sh"]
