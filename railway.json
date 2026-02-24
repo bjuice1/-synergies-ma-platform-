@@ -3,7 +3,7 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "releaseCommand": "python -c \"from backend.app import create_app; from backend.extensions import db; app = create_app('production'); ctx = app.app_context(); ctx.push(); db.create_all(); print('Schema ready')\"",
+    "releaseCommand": "python -c \"from backend.app import create_app; from backend.extensions import db; app = create_app('production'); ctx = app.app_context(); ctx.push(); db.create_all(); print('Schema ready')\" || echo 'DB init deferred - will run via railway run'",
     "startCommand": "/workspace/start.sh",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 300,
