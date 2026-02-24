@@ -147,15 +147,29 @@ def create_app(config_name=None):
     except Exception as e:
         logger.error(f"❌ Industries routes error: {e}")
 
-    # Import models to register with SQLAlchemy metadata
+    # Import ALL models to register with SQLAlchemy metadata.
+    # Every model with a relationship() must be imported before any query runs,
+    # otherwise mapper configuration fails at runtime.
     logger.info("Importing models...")
     with app.app_context():
         try:
-            from backend.app.models.synergy import Synergy, SynergyMetric
-            from backend.app.models.industry import Industry
+            from backend.app.models.organization import Organization
+            from backend.app.models.user import User
             from backend.app.models.company import Company
             from backend.app.models.deal import Deal
-            logger.info("✅ Core models imported")
+            from backend.app.models.synergy import Synergy, SynergyMetric
+            from backend.app.models.industry import Industry
+            from backend.app.models.function import Function
+            from backend.app.models.category import Category
+            from backend.app.models.comment import Comment
+            from backend.app.models.mention import Mention
+            from backend.app.models.activity import Activity
+            from backend.app.models.assessment import Assessment, AssessmentQuestion, AssessmentResponse
+            from backend.app.models.learning_path import LearningPath, LearningPathItem
+            from backend.app.models.audit_log import AuditLog
+            from backend.app.models.workflow import WorkflowTransition
+            from backend.app.models.resource import Resource
+            logger.info("✅ All models imported")
         except Exception as e:
             logger.error(f"❌ Model import error: {e}", exc_info=True)
 
