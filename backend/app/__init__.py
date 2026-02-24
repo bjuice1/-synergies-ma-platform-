@@ -109,6 +109,25 @@ def create_app(config_name=None):
         """Health check — always returns 200 so Railway healthcheck passes."""
         return {'status': 'healthy', 'version': '1.0.0'}, 200
 
+    @app.route('/db-check')
+    def db_check():
+        """Diagnostic: test raw DB connectivity and report exact error."""
+        import os
+        db_url = os.getenv('DATABASE_URL', 'NOT SET')
+        # Mask password for safe display
+        try:
+            from urllib.parse import urlparse
+            parsed = urlparse(db_url)
+            safe_url = f"{parsed.scheme}://{parsed.username}:***@{parsed.hostname}:{parsed.port}{parsed.path}"
+        except Exception:
+            safe_url = db_url[:40] + '...'
+        try:
+            with db.engine.connect() as conn:
+                result = conn.execute(db.text('SELECT 1')).fetchone()
+            return {'status': 'connected', 'url': safe_url, 'ping': str(result[0])}, 200
+        except Exception as e:
+            return {'status': 'error', 'url': safe_url, 'error': str(e)}, 500
+
     # Register blueprints
     logger.info("Registering blueprints...")
     try:
