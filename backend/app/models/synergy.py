@@ -31,6 +31,7 @@ class Synergy(db.Model):
     function_id = db.Column(db.Integer, db.ForeignKey('functions.id'), nullable=True, index=True)
     category_id = db.Column(db.Integer, db.ForeignKey('categories.id'), nullable=True, index=True)
     deal_id = db.Column(db.Integer, db.ForeignKey('deals.id'), nullable=True, index=True)
+    deal_lever_id = db.Column(db.Integer, db.ForeignKey('deal_levers.id'), nullable=True, index=True)
     synergy_type = db.Column(db.String(50), nullable=False, index=True)
     description = db.Column(db.Text, nullable=False)
     value_low = db.Column(db.BigInteger, nullable=True)  # Lower bound of value range
@@ -76,6 +77,12 @@ class Synergy(db.Model):
         back_populates='synergy',
         lazy='dynamic',
         cascade='all, delete-orphan'
+    )
+
+    deal_lever = db.relationship(
+        'DealLever',
+        back_populates='activities',
+        foreign_keys=[deal_lever_id]
     )
 
     # Constraints

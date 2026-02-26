@@ -3,6 +3,7 @@ from flask import Blueprint, request, jsonify
 from backend.app.models.deal import Deal
 from backend.app.models.company import Company
 from backend.app.models.synergy import Synergy
+from backend.app.models.lever import DealLever, SynergyLever
 from backend.app.services import synergy_generator  # Direct import to avoid __init__ cascade
 from backend.app.extensions import db
 from backend.utils.auth_decorators import require_role
@@ -231,6 +232,67 @@ def delete_deal(deal_id):
     except Exception as e:
         db.session.rollback()
         logger.error(f"Error deleting deal {deal_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+
+
+@bp.route('/<int:deal_id>/levers', methods=['GET'])
+@require_role('viewer', 'analyst', 'admin')
+def get_deal_levers(deal_id):
+    """
+    Get all synergy levers for a deal, including benchmark data,
+    cost baselines, calculated opportunity ranges, and activities.
+    This is the primary view for deal synergy analysis.
+    """
+    try:
+        deal = Deal.query.get_or_404(deal_id)
+        deal_levers = (
+            DealLever.query
+            .filter_by(deal_id=deal_id)
+            .join(SynergyLever)
+            .order_by(SynergyLever.sort_order)
+            .all()
+        )
+
+        result = []
+        for dl in deal_levers:
+            lever_data = dl.to_dict()
+            # Include activities (specific synergy items under this lever)
+            activities = Synergy.query.filter_by(deal_lever_id=dl.id).all()
+            lever_data['activities'] = [
+                {
+                    'id': a.id,
+                    'synergy_type': a.synergy_type,
+                    'description': a.description,
+                    'value_low': a.value_low,
+                    'value_high': a.value_high,
+                    'status': a.status,
+                    'confidence_score': a.confidence_score,
+                }
+                for a in activities
+            ]
+            result.append(lever_data)
+
+        # Summary totals
+        cost_levers = [dl for dl in deal_levers if dl.lever and dl.lever.lever_type == 'cost']
+        total_low = sum(dl.calculated_value_low or 0 for dl in cost_levers)
+        total_high = sum(dl.calculated_value_high or 0 for dl in cost_levers)
+        combined_revenue = (deal.acquirer.revenue_usd or 0) + (deal.target.revenue_usd or 0) if deal.acquirer and deal.target else 0
+
+        return jsonify({
+            'deal_id': deal_id,
+            'levers': result,
+            'summary': {
+                'total_cost_synergy_low': total_low,
+                'total_cost_synergy_high': total_high,
+                'combined_revenue': combined_revenue,
+                'total_pct_low': round(total_low / combined_revenue * 100, 1) if combined_revenue else None,
+                'total_pct_high': round(total_high / combined_revenue * 100, 1) if combined_revenue else None,
+                'benchmark_n': deal_levers[0].benchmark_n if deal_levers else 0,
+            }
+        }), 200
+
+    except Exception as e:
+        logger.error(f"Error fetching levers for deal {deal_id}: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error'}), 500
 
 

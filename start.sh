@@ -1,16 +1,12 @@
 #!/bin/bash
-# Railway start script - handles PORT variable expansion
-
-# Default to 8000 if PORT not set
+set -e
 PORT=${PORT:-8000}
-
-echo "Starting gunicorn on port $PORT"
-
-exec gunicorn backend.app:create_app \
-  --bind 0.0.0.0:$PORT \
-  --workers 2 \
-  --threads 4 \
+echo "Starting gunicorn on port $PORT..."
+exec gunicorn "backend.app:create_app()" \
+  --bind "0.0.0.0:${PORT}" \
+  --workers 1 \
+  --worker-class sync \
   --timeout 120 \
-  --log-level debug \
+  --log-level info \
   --access-logfile - \
   --error-logfile -

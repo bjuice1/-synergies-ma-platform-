@@ -35,19 +35,25 @@ class DevelopmentConfig(Config):
 
 class ProductionConfig(Config):
     DEBUG = False
-    # JWT_SECRET_KEY is required in production (validated in create_app)
     JWT_SECRET_KEY = os.getenv('JWT_SECRET_KEY')
     SECRET_KEY = os.getenv('SECRET_KEY')
 
-    # Production database - Railway automatically provides DATABASE_URL
-    # If DATABASE_URL starts with postgres://, update to postgresql://
-    database_url = os.getenv('DATABASE_URL')
-    if database_url and database_url.startswith('postgres://'):
+    # Railway provides DATABASE_URL; fix legacy postgres:// scheme
+    database_url = os.getenv('DATABASE_URL', '')
+    if database_url.startswith('postgres://'):
         database_url = database_url.replace('postgres://', 'postgresql://', 1)
     SQLALCHEMY_DATABASE_URI = database_url
 
-    # CORS for production
-    CORS_ORIGINS = os.getenv('CORS_ORIGINS', 'http://localhost:3000').split(',')
+    # Minimal pool for Railway's 512 MB limit; explicit timeout prevents hang
+    SQLALCHEMY_ENGINE_OPTIONS = {
+        'pool_size': 1,
+        'max_overflow': 2,
+        'pool_recycle': 3600,
+        'pool_pre_ping': False,
+        'connect_args': {'connect_timeout': 10},
+    }
+
+    CORS_ORIGINS = os.getenv('CORS_ORIGINS', '*').split(',')
 
 class TestConfig(Config):
     TESTING = True

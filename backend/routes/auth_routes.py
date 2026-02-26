@@ -47,11 +47,11 @@ def login():
     
     # Create JWT tokens with role in additional claims
     access_token = create_access_token(
-        identity=user.id,
+        identity=str(user.id),
         additional_claims={'role': user.role}  # Add role to JWT payload
     )
     refresh_token = create_refresh_token(
-        identity=user.id,
+        identity=str(user.id),
         additional_claims={'role': user.role}
     )
 

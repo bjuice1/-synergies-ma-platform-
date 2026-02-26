@@ -12,6 +12,9 @@ import type {
   SynergyFilters,
   WorkflowTransition,
   SynergyMetricsResponse,
+  Deal,
+  Company,
+  DealLeversResponse,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
@@ -173,6 +176,48 @@ export const workflowApi = {
 export const metricsApi = {
   getMetrics: async (synergyId: number): Promise<SynergyMetricsResponse> => {
     const response = await api.get<SynergyMetricsResponse>(`/synergies/${synergyId}/metrics`);
+    return response.data;
+  },
+};
+
+// Deals API
+export const dealsApi = {
+  getAll: async (filters?: { status?: string; acquirer_id?: number; target_id?: number }): Promise<Deal[]> => {
+    const params = new URLSearchParams();
+    if (filters?.status) params.append('status', filters.status);
+    if (filters?.acquirer_id) params.append('acquirer_id', filters.acquirer_id.toString());
+    if (filters?.target_id) params.append('target_id', filters.target_id.toString());
+
+    const response = await api.get<Deal[]>(`/deals${params.toString() ? `?${params.toString()}` : ''}`);
+    return response.data;
+  },
+
+  getById: async (id: number): Promise<Deal> => {
+    const response = await api.get<Deal>(`/deals/${id}`);
+    return response.data;
+  },
+
+  create: async (dealData: Partial<Deal> & { acquirer: Partial<Company>; target: Partial<Company> }): Promise<Deal> => {
+    const response = await api.post<Deal>('/deals', dealData);
+    return response.data;
+  },
+
+  update: async (id: number, dealData: Partial<Deal>): Promise<Deal> => {
+    const response = await api.put<Deal>(`/deals/${id}`, dealData);
+    return response.data;
+  },
+
+  delete: async (id: number): Promise<void> => {
+    await api.delete(`/deals/${id}`);
+  },
+
+  generateSynergies: async (id: number): Promise<{ message: string; synergies: Synergy[] }> => {
+    const response = await api.post<{ message: string; synergies: Synergy[] }>(`/deals/${id}/generate-synergies`);
+    return response.data;
+  },
+
+  getLevers: async (id: number): Promise<DealLeversResponse> => {
+    const response = await api.get<DealLeversResponse>(`/deals/${id}/levers`);
     return response.data;
   },
 };

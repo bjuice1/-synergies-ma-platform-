@@ -188,6 +188,7 @@ def create_app(config_name=None):
             from backend.app.models.audit_log import AuditLog
             from backend.app.models.workflow import WorkflowTransition
             from backend.app.models.resource import Resource
+            from backend.app.models.lever import SynergyLever, BenchmarkProject, BenchmarkDataPoint, DealCostBaseline, DealLever
             logger.info("✅ All models imported")
         except Exception as e:
             logger.error(f"❌ Model import error: {e}", exc_info=True)

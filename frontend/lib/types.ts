@@ -1,3 +1,42 @@
+// Company types
+export interface Company {
+  id: number;
+  name: string;
+  industry: string;
+  description?: string;
+  revenue_usd?: number;
+  employees?: number;
+  geography?: string[];
+  products?: string[];
+  tech_stack?: string[];
+  strengths?: string[];
+  weaknesses?: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+// Deal types
+export interface Deal {
+  id: number;
+  name: string;
+  deal_type: 'acquisition' | 'merger' | 'jv' | 'partnership';
+  deal_size_usd?: number;
+  close_date?: string;
+  strategic_rationale?: string;
+  acquirer_id: number;
+  target_id: number;
+  acquirer?: Company;
+  target?: Company;
+  status: 'draft' | 'active' | 'closed' | 'cancelled';
+  created_at: string;
+  updated_at: string;
+  // Optional expanded fields
+  synergies?: Synergy[];
+  synergies_count?: number;
+  total_value_low?: number;
+  total_value_high?: number;
+}
+
 // Core entity types
 export interface Synergy {
   id: number;
@@ -188,4 +227,55 @@ export interface SynergyMetricsResponse {
   total_value_low: number;
   total_value_high: number;
   metrics: SynergyMetric[];
+}
+
+// Lever / benchmarking types
+export interface SynergyLever {
+  id: number;
+  name: string;
+  description?: string;
+  lever_type: 'cost' | 'revenue';
+  sort_order: number;
+}
+
+export interface SynergyActivity {
+  id: number;
+  synergy_type: string;
+  description: string;
+  value_low: number;
+  value_high: number;
+  status: string;
+  confidence_score: number;
+}
+
+export interface DealLever {
+  id: number;
+  deal_id: number;
+  lever_id: number;
+  lever_name: string;
+  lever_type: 'cost' | 'revenue';
+  benchmark_pct_low: number;
+  benchmark_pct_high: number;
+  benchmark_pct_median: number;
+  benchmark_n: number;
+  combined_baseline_usd: number;
+  calculated_value_low: number;
+  calculated_value_high: number;
+  status: 'identified' | 'in_analysis' | 'validated' | 'excluded';
+  confidence: 'high' | 'medium' | 'low';
+  advisor_notes?: string;
+  activities: SynergyActivity[];
+}
+
+export interface DealLeversResponse {
+  deal_id: number;
+  levers: DealLever[];
+  summary: {
+    total_cost_synergy_low: number;
+    total_cost_synergy_high: number;
+    combined_revenue: number;
+    total_pct_low: number;
+    total_pct_high: number;
+    benchmark_n: number;
+  };
 }

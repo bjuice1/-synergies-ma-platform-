@@ -59,6 +59,20 @@ class Deal(db.Model):
         cascade='all, delete-orphan'
     )
 
+    cost_baselines = db.relationship(
+        'DealCostBaseline',
+        back_populates='deal',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+
+    deal_levers = db.relationship(
+        'DealLever',
+        back_populates='deal',
+        lazy='dynamic',
+        cascade='all, delete-orphan'
+    )
+
     # Constraints
     __table_args__ = (
         db.CheckConstraint('acquirer_id != target_id', name='different_deal_companies'),

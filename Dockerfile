@@ -19,8 +19,7 @@ WORKDIR /workspace
 COPY requirements.txt /workspace/
 
 # Install Python dependencies as root (last time we need root)
-RUN pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir pyautogen
+RUN pip install --no-cache-dir -r requirements.txt
 
 # Switch to non-root user (can't sudo, can't install packages)
 USER synergies
@@ -38,4 +37,6 @@ ENV PYTHONUNBUFFERED=1 \
     HOME=/workspace
 
 # Run gunicorn directly with shell form to expand $PORT
-CMD gunicorn backend.app:create_app --bind 0.0.0.0:${PORT:-8000} --workers 2 --threads 4 --timeout 120 --log-level debug --access-logfile - --error-logfile -
+COPY --chown=synergies:synergies start.sh /workspace/start.sh
+RUN chmod +x /workspace/start.sh
+CMD ["/workspace/start.sh"]
