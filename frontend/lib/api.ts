@@ -15,6 +15,8 @@ import type {
   Deal,
   Company,
   DealLeversResponse,
+  LeverPlaybook,
+  LeverWithPlaybook,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
@@ -218,6 +220,26 @@ export const dealsApi = {
 
   getLevers: async (id: number): Promise<DealLeversResponse> => {
     const response = await api.get<DealLeversResponse>(`/deals/${id}/levers`);
+    return response.data;
+  },
+};
+
+// Learn API (lever playbooks)
+export const learnApi = {
+  getAll: async (): Promise<LeverWithPlaybook[]> => {
+    const response = await api.get<LeverWithPlaybook[]>('/learn');
+    return response.data;
+  },
+
+  getById: async (leverId: number): Promise<LeverWithPlaybook> => {
+    const response = await api.get<LeverWithPlaybook>(`/learn/${leverId}`);
+    return response.data;
+  },
+
+  update: async (leverId: number, data: Partial<Pick<LeverPlaybook,
+    'what_it_is' | 'what_drives_it' | 'diligence_questions' | 'red_flags' | 'team_notes'
+  >>): Promise<LeverPlaybook> => {
+    const response = await api.put<LeverPlaybook>(`/learn/${leverId}`, data);
     return response.data;
   },
 };

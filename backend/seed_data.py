@@ -39,6 +39,7 @@ from backend.app.models.audit_log import AuditLog
 from backend.app.models.workflow import WorkflowTransition
 from backend.app.models.resource import Resource
 from backend.app.models.lever import SynergyLever, BenchmarkProject, BenchmarkDataPoint, DealCostBaseline, DealLever
+from backend.app.models.playbook import LeverPlaybook
 
 DEMO_EMAIL = "demo@synergies.ai"
 DEMO_PASSWORD = "Demo1234!"
@@ -644,6 +645,330 @@ def seed_synergy_activities(deal, acquirer, target, deal_lever_map, functions, c
     print(f"  ✓ Synergy activities: {created} created")
 
 
+def seed_playbooks(user):
+    """
+    Seed methodology playbook content for each cost lever.
+    Written from the perspective of an M&A advisor — this is what analysts actually use.
+    """
+    playbook_data = {
+        "IT": {
+            "what_it_is": (
+                "IT synergies arise from eliminating duplicated technology infrastructure, "
+                "consolidating application portfolios, and achieving scale economics on vendor contracts. "
+                "In a typical tech acquisition, IT is the single largest cost synergy lever — "
+                "commonly 1.5–2.1% of combined revenue — because both companies carry full IT stacks "
+                "that were built independently.\n\n"
+                "The three primary sources are: (1) infrastructure consolidation (cloud, data center, network), "
+                "(2) application rationalization (eliminating redundant SaaS, licenses, and custom systems), "
+                "and (3) IT headcount optimization through shared services."
+            ),
+            "what_drives_it": (
+                "The size of the IT synergy is driven by:\n\n"
+                "• **Degree of overlap** — two companies running separate ERP, CRM, HRIS, and BI tools "
+                "is the classic pattern. More overlap = more opportunity.\n"
+                "• **Cloud concentration** — if acquirer is AWS-heavy and target is GCP-heavy, "
+                "infrastructure consolidation saves 15–30% on cloud bills via volume discounts.\n"
+                "• **SaaS sprawl** — targets <500 employees often have 80–150 SaaS tools with no governance. "
+                "Post-merger audit typically eliminates 30–40% of seats.\n"
+                "• **Legacy tech debt** — the more legacy the acquirer's stack, the lower the synergy "
+                "(consolidation costs offset savings).\n"
+                "• **IT headcount ratio** — if the target has a disproportionately large IT team relative "
+                "to revenue, that's a direct savings signal."
+            ),
+            "diligence_questions": [
+                "What is the total annual IT spend by category (infrastructure, applications, headcount, vendor support)?",
+                "Which ERP, CRM, HRIS, and BI systems are in use at each company — and what are the contract end dates?",
+                "What is the cloud spend split by provider (AWS / Azure / GCP)? What are current contractual commitments?",
+                "How many SaaS tools are licensed? Is there a software asset management (SAM) inventory?",
+                "What is the IT org chart? How many FTEs and contractors? What is the split between run-the-business and build?",
+                "Are there any long-term vendor contracts or software licenses that cannot be terminated without penalty?",
+                "What is the current state of identity management (SSO / IAM)? Single tenant or multi-tenant apps?",
+                "Has either company recently completed a major system migration (e.g. ERP upgrade, cloud migration)?"
+            ],
+            "red_flags": [
+                "Target is mid-ERP migration — consolidation costs will exceed savings for 18–24 months",
+                "Multi-year cloud commitments (AWS EDP / Azure commit) that can't be renegotiated post-close",
+                "Heavy custom-built internal tooling — integration costs are typically 2–3x the estimated savings",
+                "IT team is deeply embedded in the product org — 'IT headcount' reduction risks product delivery",
+                "No software asset management — indicates poor contract hygiene and hidden spend",
+                "Significant technical debt in core systems — modernization must precede consolidation"
+            ],
+            "team_notes": (
+                "From Project Apex: cloud consolidation (AWS→AWS) was straightforward — "
+                "achieved 22% infrastructure savings within 6 months. Application rationalization "
+                "took 14 months vs. the 9-month estimate because of undocumented integrations in the target's CRM.\n\n"
+                "Rule of thumb: budget 1.5× the estimated savings as the integration cost for IT, "
+                "and phase savings over 18–24 months, not 12."
+            ),
+        },
+        "Finance": {
+            "what_it_is": (
+                "Finance synergies come from eliminating duplicate finance functions and consolidating "
+                "onto a single set of systems, processes, and team. In a typical acquisition where the "
+                "target is a growth-stage company (50–500 employees), finance is often lightly resourced "
+                "— frequently relying on outsourced CFO services, simple accounting tools (NetSuite, QuickBooks), "
+                "and contractors for FP&A.\n\n"
+                "The benchmark range is 0.6–0.9% of combined revenue. This is a high-confidence lever "
+                "because the costs are visible, the integration path is well-understood, and the savings "
+                "are largely structural (headcount + systems, not behavioral change)."
+            ),
+            "what_drives_it": (
+                "Key value drivers:\n\n"
+                "• **Target's finance structure** — outsourced CFO + controller = high synergy. "
+                "In-house team of 15+ = lower synergy but still achievable.\n"
+                "• **Systems gap** — target on QuickBooks or NetSuite migrating to acquirer's SAP/Oracle "
+                "is a known cost/effort. Budget $200–400K for migration; savings materialize in Year 2.\n"
+                "• **Reporting consolidation** — eliminating duplicative management reporting, "
+                "board packs, and investor reporting is 2–4 FTE equivalent.\n"
+                "• **Audit and compliance** — combined entity needs one audit, one SOX compliance program, "
+                "one set of external advisors. Tax consolidation alone can be $300–600K annually.\n"
+                "• **Treasury efficiency** — combined cash management and banking relationships typically "
+                "save $100–250K in fees."
+            ),
+            "diligence_questions": [
+                "What is the target's finance org structure? Headcount by function (accounting, FP&A, tax, treasury)?",
+                "Is the CFO/Controller outsourced or in-house? What are the contract terms?",
+                "What accounting system does the target use? When is the contract up? What's the migration complexity?",
+                "What is the target's annual spend on external audit, tax advisors, and legal counsel?",
+                "Does the target have transfer pricing complexity or multi-entity structure that complicates consolidation?",
+                "What is the target's revenue recognition policy and are there any non-standard accounting treatments?",
+                "Are there any earn-outs, contingent consideration, or variable compensation structures post-close?",
+                "What is the target's monthly close cycle time? Is it compatible with the acquirer's reporting calendar?"
+            ],
+            "red_flags": [
+                "Target has non-standard revenue recognition (e.g. multi-element arrangements in SaaS) — restatement risk",
+                "CFO or Controller is a retention risk and holds all institutional knowledge",
+                "Complex multi-entity legal structure with intercompany transactions — consolidation takes 12–18 months",
+                "Outstanding audit qualifications, material weaknesses, or restatement history",
+                "Target's fiscal year doesn't align with acquirer's — creates 12+ months of reporting overlap",
+                "Earn-out provisions tied to standalone metrics that conflict with integration goals"
+            ],
+            "team_notes": (
+                "Finance is typically our highest-confidence lever in tech acquisitions — "
+                "we've never missed by more than 15% when the target's finance structure is clear.\n\n"
+                "Watch for: tax integration complexity is almost always underestimated. "
+                "Get the tax team involved in diligence, not just post-signing.\n\n"
+                "The outsourced CFO situation is a gift — but make sure the acquirer's CFO "
+                "has bandwidth to absorb the target's reporting requirements in Year 1."
+            ),
+        },
+        "HR": {
+            "what_it_is": (
+                "HR synergies come from consolidating human resources infrastructure: systems (HRIS, payroll, benefits), "
+                "vendors (PEO contracts, benefits brokers, EAP providers), and administrative headcount. "
+                "This is distinct from workforce restructuring — HR synergies are about the machinery of HR, "
+                "not decisions about which roles to eliminate.\n\n"
+                "Benchmark: 1.0–1.5% of combined revenue. Medium confidence because it depends on "
+                "employment contract review and retention decisions that are often still in flux at the time "
+                "of diligence."
+            ),
+            "what_drives_it": (
+                "Key value drivers:\n\n"
+                "• **PEO / EOR contracts** — smaller targets (under 200 employees) often use a PEO "
+                "(TriNet, Justworks, Rippling) which carries a significant per-employee premium. "
+                "Moving onto the acquirer's self-insured benefits plan saves $1,500–3,000 per employee annually.\n"
+                "• **Benefits cost consolidation** — group buying power on health insurance, dental, vision. "
+                "Larger combined headcount = better rates. Typically 8–15% reduction on benefits spend.\n"
+                "• **HRIS migration** — target moves from BambooHR/Rippling to acquirer's Workday/ADP. "
+                "One-time migration cost, then ongoing per-seat savings.\n"
+                "• **HR admin headcount** — small targets often have a HRBP-heavy model relative to size. "
+                "Shared services model reduces ratio to 1 HR FTE per 100–150 employees."
+            ),
+            "diligence_questions": [
+                "What HRIS and payroll systems does the target use? What are the contract terms and exit costs?",
+                "Is the target on a PEO or EOR? What is the annual per-employee cost premium vs. self-insured?",
+                "What are the target's current benefits costs per employee vs. the acquirer's?",
+                "How many HR FTEs does the target have? What are their roles (HRBP, recruiting, comp, admin)?",
+                "Are there any change-of-control provisions in employment contracts that trigger on acquisition?",
+                "What is the target's current attrition rate? Are there key retention risks in the HR-sensitive functions?",
+                "What is the target's equity plan structure? How many option/RSU holders, and what are the vesting schedules?",
+                "Are there any pending employment claims, EEOC complaints, or labor relation issues?"
+            ],
+            "red_flags": [
+                "High-equity, low-cash compensation structure at target — retention cliff at 12–18 months post-close",
+                "Change-of-control acceleration provisions in exec contracts that increase acquisition cost",
+                "Target operates across multiple states with inconsistent HR policy — compliance harmonization is complex",
+                "Active unionization effort or existing CBA — integration timeline and costs are unpredictable",
+                "Key engineering / product talent has outside offers — integration disruption increases attrition risk",
+                "Outstanding claims or lawsuits (wage, discrimination, harassment) — creates integration distraction"
+            ],
+            "team_notes": (
+                "HR synergies are real but always slower than modeled. In our experience, "
+                "PEO exit takes 3–6 months (enrollment windows, COBRA transitions), "
+                "HRIS migration takes 6–9 months, and benefits harmonization is Year 2.\n\n"
+                "The 1.0–1.5% benchmark applies to the HR cost structure, not headcount reductions. "
+                "Workforce restructuring synergies are tracked separately (usually under Operations or the specific function).\n\n"
+                "Retention: flag any engineer or PM with unvested equity > $500K. These are the people "
+                "who will get recruited during diligence."
+            ),
+        },
+        "Operations": {
+            "what_it_is": (
+                "Operations synergies cover customer success, professional services, support, "
+                "and other post-sale functions that are delivered to customers. In SaaS companies, "
+                "this lever is primarily about absorbing the target's CS and support teams into the "
+                "acquirer's existing shared services.\n\n"
+                "Benchmark: 0.9–1.3% of combined revenue. Medium confidence — depends on "
+                "customer success model compatibility and retention strategy decisions."
+            ),
+            "what_drives_it": (
+                "Key value drivers:\n\n"
+                "• **CS team absorption** — if the acquirer has a scaled CS org (>100 FTEs), "
+                "absorbing the target's 10–20 CSMs typically requires only 30–40% of the headcount "
+                "due to automation and playbook leverage.\n"
+                "• **Support consolidation** — combining ticketing systems (Zendesk, Intercom) and "
+                "support tiers. Unified knowledge base reduces resolution time 20–30%.\n"
+                "• **Professional services overlap** — if both companies sell implementation services, "
+                "one delivery team is redundant for shared customers.\n"
+                "• **Tooling rationalization** — customer success tools (Gainsight, ChurnZero, Totango). "
+                "Two renewal platforms become one.\n"
+                "• **Shared infrastructure** — combined NOC/SRE team, combined observability stack."
+            ),
+            "diligence_questions": [
+                "What is the target's CS org structure and headcount by role (CSM, SA, support, PS)?",
+                "What is the target's GRR and NRR? How do they compare to the acquirer's benchmarks?",
+                "What CS tooling does the target use? What are contract terms?",
+                "How many customer accounts does the target have, and what is the average account size?",
+                "What is the average CSM-to-account ratio at the target vs. the acquirer?",
+                "Are there any strategic accounts at the target that require white-glove treatment?",
+                "What is the target's support SLA structure? Are there contractual commitments that raise cost?",
+                "Does the target have a professional services P&L, and is it margin-positive?"
+            ],
+            "red_flags": [
+                "Target's GRR is below 85% — integration will surface churn risk, not synergy",
+                "Target has contractual SLA commitments with penalties that are incompatible with acquirer's model",
+                "CS team is the primary customer relationship — headcount reduction will drive churn",
+                "Target has a 'high-touch' enterprise CS model that can't be absorbed into a scaled motion",
+                "Professional services is a loss-leader — PS revenue doesn't offset cost"
+            ],
+            "team_notes": (
+                "The CS absorption synergy is often the most emotionally sensitive — "
+                "customers notice when their CSM changes, and any disruption shows up in NRR 6–12 months later.\n\n"
+                "Our practice: model the 'full synergy' (absorb all target CS headcount) "
+                "but present to management with a 30% haircut for retention-driven overruns. "
+                "Then make the retention vs. synergy tradeoff explicit.\n\n"
+                "Tooling: if the target is on Gainsight and the acquirer is on ChurnZero, "
+                "that's a $400K–800K migration cost. Add it to the integration cost column."
+            ),
+        },
+        "Procurement": {
+            "what_it_is": (
+                "Procurement synergies come from combining vendor spend to unlock volume discounts, "
+                "renegotiating contracts from a position of greater scale, and eliminating duplicated "
+                "vendor relationships. For software-heavy businesses, this lever is primarily about "
+                "SaaS and cloud vendor consolidation — physical procurement is minimal.\n\n"
+                "Benchmark: 0.3–0.6% of combined revenue. Low-medium confidence — actual realization "
+                "depends on contract timing and vendor negotiation outcomes."
+            ),
+            "what_drives_it": (
+                "Key value drivers:\n\n"
+                "• **SaaS vendor consolidation** — the single largest lever in tech acquisitions. "
+                "Combined spend on Salesforce, Slack, Zoom, GitHub, Jira, Okta etc. qualifies for "
+                "enterprise pricing tiers that neither company could access independently.\n"
+                "• **Cloud volume discounts** — combined AWS/Azure/GCP spend often crosses discount tier boundaries. "
+                "Every $1M of additional committed spend unlocks 2–5% additional discount.\n"
+                "• **Duplicate vendor elimination** — two separate contracts for the same tool category "
+                "(e.g. two monitoring solutions, two password managers) are cancelled on consolidation.\n"
+                "• **Insurance and benefits procurement** — combined entity can renegotiate D&O, E&O, "
+                "cyber liability premiums from a larger and more diversified risk pool."
+            ),
+            "diligence_questions": [
+                "What is the target's top 20 vendor spend list, with contract values and renewal dates?",
+                "Which SaaS tools does the target use that overlap with the acquirer's stack?",
+                "What are the target's cloud spend commitments by provider and when do they renew?",
+                "Does the target have any preferred vendor or exclusive supplier agreements?",
+                "What insurance policies does the target carry, and what are the annual premiums?",
+                "Who manages procurement at the target — is there a formal procurement function?",
+                "Are there any vendor contracts with change-of-control clauses that require consent?"
+            ],
+            "red_flags": [
+                "Multi-year SaaS contracts with significant termination penalties — savings are delayed 1–3 years",
+                "Change-of-control clauses on key vendor agreements — renegotiation required, cost and time unpredictable",
+                "Target has committed SaaS spend that vastly exceeds actual usage (over-licensed)",
+                "No procurement function — informal spend management means contracts are poorly documented",
+                "Key platform dependency on a vendor who is also a competitor (e.g. Salesforce as CRM when acquirer competes with Salesforce)"
+            ],
+            "team_notes": (
+                "Procurement is the 'real but slow' lever. The savings are real but they materialize "
+                "as contracts renew — which could be 6, 12, or 24 months post-close.\n\n"
+                "In our model, we discount all procurement synergies by one year — "
+                "i.e. if the contract renews in Q2 of Year 1, we model the saving from Year 2.\n\n"
+                "The SaaS audit is almost always a positive surprise. We've never done a software audit "
+                "where we didn't find at least one tool the target was paying for but had stopped using."
+            ),
+        },
+        "Real Estate": {
+            "what_it_is": (
+                "Real estate synergies come from consolidating office footprints post-merger: "
+                "exiting leases, co-locating teams, and renegotiating remaining leases from a "
+                "position of reduced need. For knowledge-work businesses (SaaS, tech, professional services), "
+                "real estate is often the quickest lever to execute — the path is simple "
+                "(give notice, move teams, exit lease) and the savings are highly predictable.\n\n"
+                "Benchmark: 0.2–0.4% of combined revenue. High confidence — lease terms are documentable "
+                "and the savings math is arithmetic, not behavioral."
+            ),
+            "what_drives_it": (
+                "Key value drivers:\n\n"
+                "• **Geographic overlap** — if both companies have offices in the same city, "
+                "one can be exited. The closer the offices, the lower the disruption to employees.\n"
+                "• **Lease timing** — synergies are easy when the target's lease expires within 12 months. "
+                "Breaking a lease mid-term requires a termination payment (typically 3–6 months rent).\n"
+                "• **Acquirer's space utilization** — if the acquirer has excess capacity post-COVID "
+                "(most do), absorbing the target's headcount costs nothing beyond furniture.\n"
+                "• **Remote work policy** — higher remote-first culture = smaller target footprint "
+                "= lower absolute synergy but also lower cost.\n"
+                "• **Sublease market** — if the target's space is subleased rather than exited, "
+                "the carrying cost continues until a subtenant is found."
+            ),
+            "diligence_questions": [
+                "What are the target's office locations, lease terms, and annual rent by location?",
+                "When do target office leases expire? Are there renewal options or break clauses?",
+                "What is the square footage and occupancy rate at each target location?",
+                "Does the acquirer have available capacity in cities where the target has offices?",
+                "Are there any leasehold improvements that would be written off on lease exit?",
+                "What is the sublease market like in the target's key locations?",
+                "Are there any data center or co-location facilities that are office-equivalent fixed costs?"
+            ],
+            "red_flags": [
+                "Long-term lease (5+ years remaining) with no break clause — exit cost could wipe out synergy value",
+                "Leasehold improvement write-off is material (>$1M) — reduces net synergy",
+                "Target's office is in a weak sublease market — carrying cost extends if can't sublease",
+                "Key employee clusters are anchored to specific offices — consolidation triggers attrition",
+                "Data center lease tied to production infrastructure — not a quick exit"
+            ],
+            "team_notes": (
+                "Real estate is our most reliable lever — we've never had a real estate synergy "
+                "miss by more than 10% when the lease terms are known.\n\n"
+                "Quick checklist at LOI stage:\n"
+                "  1. Pull the lease abstract for every target location\n"
+                "  2. Check the acquirer's space capacity in those cities\n"
+                "  3. Model 3 scenarios: exit at expiry, break clause, sublease\n\n"
+                "Austin, NYC, and SF are hard sublease markets right now (2025). "
+                "Seattle and Denver are better. Factor into your timeline assumptions."
+            ),
+        },
+    }
+
+    created = 0
+    for lever_name, content in playbook_data.items():
+        lever = SynergyLever.query.filter_by(name=lever_name).first()
+        if not lever:
+            continue
+        existing = LeverPlaybook.query.filter_by(lever_id=lever.id).first()
+        if existing:
+            continue
+        playbook = LeverPlaybook(
+            lever_id=lever.id,
+            last_edited_by_id=user.id,
+            **content,
+        )
+        db.session.add(playbook)
+        created += 1
+
+    db.session.flush()
+    print(f"  ✓ Lever playbooks: {created} created")
+
+
 def main():
     app = create_app("development")
     with app.app_context():
@@ -651,7 +976,7 @@ def main():
 
         print("→ Organization & User")
         org = seed_organization()
-        seed_user(org)
+        user = seed_user(org)
 
         print("→ Lookup tables")
         industries = seed_industries()
@@ -678,6 +1003,9 @@ def main():
 
         print("→ Synergy activities (advisory layer)")
         seed_synergy_activities(deal, acquirer, target, deal_lever_map, functions, categories)
+
+        print("→ Lever playbooks (learning section content)")
+        seed_playbooks(user)
 
         db.session.commit()
 

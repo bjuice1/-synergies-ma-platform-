@@ -229,6 +229,30 @@ export interface SynergyMetricsResponse {
   metrics: SynergyMetric[];
 }
 
+// Learning section — lever playbook
+export interface LeverPlaybook {
+  id: number;
+  lever_id: number;
+  lever_name: string | null;
+  lever_type: string | null;
+  what_it_is: string | null;
+  what_drives_it: string | null;
+  diligence_questions: string[];
+  red_flags: string[];
+  team_notes: string | null;
+  last_edited_by: string | null;
+  updated_at: string | null;
+}
+
+export interface LeverWithPlaybook {
+  lever_id: number;
+  lever_name: string;
+  lever_type: 'cost' | 'revenue';
+  sort_order: number;
+  description: string | null;
+  playbook: LeverPlaybook | null;
+}
+
 // Lever / benchmarking types
 export interface SynergyLever {
   id: number;

@@ -166,6 +166,15 @@ def create_app(config_name=None):
     except Exception as e:
         logger.error(f"❌ Industries routes error: {e}")
 
+    try:
+        from backend.routes.learn_routes import bp as learn_bp
+        app.register_blueprint(learn_bp)
+        logger.info("✅ Learn routes registered")
+    except ImportError:
+        logger.warning("⚠️  Learn routes not found - skipping")
+    except Exception as e:
+        logger.error(f"❌ Learn routes error: {e}")
+
     # Import ALL models to register with SQLAlchemy metadata.
     # Every model with a relationship() must be imported before any query runs,
     # otherwise mapper configuration fails at runtime.
@@ -189,6 +198,7 @@ def create_app(config_name=None):
             from backend.app.models.workflow import WorkflowTransition
             from backend.app.models.resource import Resource
             from backend.app.models.lever import SynergyLever, BenchmarkProject, BenchmarkDataPoint, DealCostBaseline, DealLever
+            from backend.app.models.playbook import LeverPlaybook
             logger.info("✅ All models imported")
         except Exception as e:
             logger.error(f"❌ Model import error: {e}", exc_info=True)
