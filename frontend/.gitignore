@@ -1,0 +1,17 @@
+# Next.js build output
+.next/
+out/
+
+# TypeScript incremental build cache — must NOT be in repo
+# Railway Nixpacks mounts a directory cache here; a committed file breaks the build
+tsconfig.tsbuildinfo
+
+# Dependencies
+node_modules/
+
+# Misc
+.DS_Store
+*.local
+.env
+.env.local
+.env.production.local
