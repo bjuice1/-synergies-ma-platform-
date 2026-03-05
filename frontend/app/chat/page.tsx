@@ -47,7 +47,7 @@ export default function ChatPage() {
               <div>
                 <h1 className="text-2xl font-bold text-white">AI Chat</h1>
                 <p className="text-sm text-gray-400 mt-1">
-                  Ask questions about your synergies in natural language
+                  Ask questions about M&A lever methodology
                 </p>
               </div>
               <nav className="flex gap-4">
@@ -56,6 +56,12 @@ export default function ChatPage() {
                   className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
                 >
                   Dashboard
+                </a>
+                <a
+                  href="/learn"
+                  className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+                >
+                  Learn
                 </a>
                 <a
                   href="/synergies"

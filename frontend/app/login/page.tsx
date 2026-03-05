@@ -56,7 +56,7 @@ export default function LoginPage() {
               <Input
                 id="email"
                 type="email"
-                placeholder="admin@techcorp.com"
+                placeholder="demo@synergies.ai"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -93,7 +93,7 @@ export default function LoginPage() {
             </Button>
 
             <div className="mt-4 text-center text-sm text-gray-400">
-              Demo credentials: admin@techcorp.com / admin123
+              Demo credentials: demo@synergies.ai / Demo1234!
             </div>
           </form>
         </CardContent>

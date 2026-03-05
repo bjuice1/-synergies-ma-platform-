@@ -366,6 +366,7 @@ export default function LearnPage() {
                 <a href="/dashboard" className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">Dashboard</a>
                 <a href="/deals" className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">Deals</a>
                 <a href="/learn" className="px-4 py-2 text-sm font-medium text-white bg-white/10 rounded-lg">Learn</a>
+                <a href="/chat" className="px-4 py-2 text-sm font-medium text-gray-300 hover:text-white hover:bg-white/10 rounded-lg transition-colors">AI Chat</a>
               </nav>
             </div>
           </div>

@@ -485,6 +485,19 @@ def seed_deal_levers(deal, levers):
                 "High confidence — lease terms confirmed, relocation cost estimated at $180K."
             ),
         },
+        {
+            "lever": "Revenue",
+            "benchmark_pct_low": 2.5, "benchmark_pct_high": 5.0, "benchmark_pct_median": 3.5,
+            "combined_baseline_usd": None,
+            "status": "identified",
+            "confidence": "low",
+            "advisor_notes": (
+                "Cross-sell DataViz Pro to NovaTech 2,400-customer enterprise base. "
+                "Assumed 15% attach rate in Year 1 at $18K ACV = $6.5M incremental ARR. "
+                "Embed DataViz SDK as premium analytics module in NovaCRM/NovaERP — addresses #1 feature request. "
+                "Revenue synergies are lower confidence — depend on sales execution and product integration timeline."
+            ),
+        },
     ]
 
     created = 0
@@ -969,6 +982,791 @@ def seed_playbooks(user):
     print(f"  ✓ Lever playbooks: {created} created")
 
 
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ADDITIONAL DEMO DEALS
+# ─────────────────────────────────────────────────────────────────────────────
+
+def seed_apex_health_deal(levers, functions, categories):
+    """
+    Deal 2: Apex Health Systems acquires LabTech Diagnostics
+    Healthcare sector, $850M deal, $2.12B combined revenue, status: active
+    High HR/Operations synergies typical of healthcare services consolidation.
+    """
+    from datetime import date
+
+    acquirer_data = {
+        "name": "Apex Health Systems",
+        "industry": "Healthcare",
+        "description": (
+            "Regional healthcare network operating 42 hospitals and 280 outpatient clinics "
+            "across the Southeast and Midwest. Strong inpatient volumes with growing ambulatory strategy."
+        ),
+        "revenue_usd": 1_800_000_000,
+        "employees": 9_200,
+        "geography": ["Southeast US", "Midwest US"],
+        "products": ["Inpatient Services", "Ambulatory Care", "Apex Health Plan", "Apex Pharmacy"],
+        "tech_stack": ["Epic", "Oracle Health", "Azure", "Cerner"],
+        "strengths": ["Regional market dominance", "Payer relationships", "Clinical outcomes"],
+        "weaknesses": ["Limited diagnostics capability", "Aging IT infrastructure", "No direct-to-consumer channel"],
+    }
+    target_data = {
+        "name": "LabTech Diagnostics",
+        "industry": "Healthcare",
+        "description": (
+            "High-growth clinical diagnostics company operating 180 labs across 12 states. "
+            "AI-powered pathology platform reduces diagnostic turnaround by 40%. "
+            "Primary revenue from hospital system contracts and direct patient billing."
+        ),
+        "revenue_usd": 320_000_000,
+        "employees": 1_800,
+        "geography": ["Southeast US", "Midwest US", "Mid-Atlantic"],
+        "products": ["LabTech Core", "LabTech AI Pathology", "LabTech Patient Portal"],
+        "tech_stack": ["AWS", "Python", "TensorFlow", "Epic Integration", "Salesforce Health Cloud"],
+        "strengths": ["AI diagnostics IP", "Lab network density", "Fast turnaround times"],
+        "weaknesses": ["Concentrated customer base (top 5 = 60% revenue)", "Thin margins", "Limited billing capability"],
+    }
+
+    acquirer = Company.query.filter_by(name=acquirer_data["name"]).first()
+    if not acquirer:
+        acquirer = Company(**acquirer_data)
+        db.session.add(acquirer)
+        db.session.flush()
+
+    target = Company.query.filter_by(name=target_data["name"]).first()
+    if not target:
+        target = Company(**target_data)
+        db.session.add(target)
+        db.session.flush()
+
+    deal = Deal.query.filter_by(name="Apex Health acquires LabTech Diagnostics").first()
+    if deal:
+        print(f"  ⊘ Deal exists: {deal.name}")
+        return
+
+    deal = Deal(
+        name="Apex Health acquires LabTech Diagnostics",
+        deal_type="acquisition",
+        deal_size_usd=850_000_000,
+        close_date=date(2026, 9, 30),
+        strategic_rationale=(
+            "Apex acquires LabTech to vertically integrate diagnostics into its care continuum, "
+            "eliminating $120M+ in annual third-party lab spend and capturing margin on tests ordered "
+            "by Apex physicians. LabTech's AI pathology platform accelerates Apex's precision medicine "
+            "initiative by 3 years. The combination creates the third-largest integrated health diagnostics "
+            "network in the US. Deal multiple: 2.7x revenue."
+        ),
+        acquirer_id=acquirer.id,
+        target_id=target.id,
+        status="active",
+    )
+    db.session.add(deal)
+    db.session.flush()
+    print(f"  ✓ Deal: {deal.name}")
+
+    combined_revenue = 2_120_000_000
+
+    lever_configs = [
+        {
+            "lever": "IT",
+            "benchmark_pct_low": 0.8, "benchmark_pct_high": 1.3, "benchmark_pct_median": 1.0,
+            "combined_baseline_usd": 198_000_000,
+            "status": "in_analysis", "confidence": "medium",
+            "advisor_notes": (
+                "IT consolidation in healthcare is more complex than typical tech deals — "
+                "Epic/Cerner interoperability requires 18-24 months of integration work. "
+                "Primary opportunities: shared data center consolidation, unified identity management, "
+                "and elimination of LabTech's duplicate EHR connectivity layer. "
+                "LabTech's AWS infrastructure can coexist with Apex Azure short-term."
+            ),
+        },
+        {
+            "lever": "Finance",
+            "benchmark_pct_low": 0.5, "benchmark_pct_high": 0.8, "benchmark_pct_median": 0.65,
+            "combined_baseline_usd": 97_000_000,
+            "status": "validated", "confidence": "high",
+            "advisor_notes": (
+                "LabTech operates a lean finance function (12 FTEs) that absorbs cleanly into "
+                "Apex's 85-person finance org. Key savings: eliminate outsourced audit ($1.8M/yr), "
+                "consolidate treasury and banking relationships, merge FP&A onto Apex Workday instance. "
+                "Revenue cycle consolidation is the largest opportunity — Apex's billing team handles "
+                "2.8M claims/year; LabTech adds 1.1M."
+            ),
+        },
+        {
+            "lever": "HR",
+            "benchmark_pct_low": 1.2, "benchmark_pct_high": 1.8, "benchmark_pct_median": 1.5,
+            "combined_baseline_usd": 156_000_000,
+            "status": "in_analysis", "confidence": "medium",
+            "advisor_notes": (
+                "Combined workforce of 11,000. HR synergy primarily from benefits consolidation "
+                "(Apex's self-insured plan saves $2,200 per employee vs LabTech's fully-insured). "
+                "HRIS migration from LabTech BambooHR to Apex Workday: 6-month implementation. "
+                "Key risk: LabTech lab technicians are in high demand — retention packages required "
+                "for ~200 senior pathologists and AI/ML engineers."
+            ),
+        },
+        {
+            "lever": "Operations",
+            "benchmark_pct_low": 1.1, "benchmark_pct_high": 1.6, "benchmark_pct_median": 1.35,
+            "combined_baseline_usd": 224_000_000,
+            "status": "validated", "confidence": "high",
+            "advisor_notes": (
+                "Largest cost synergy lever. Apex's 42 hospitals currently outsource $120M+ in "
+                "diagnostic testing to Quest, Labcorp, and local labs. Routing those tests to "
+                "LabTech immediately eliminates third-party margin. Specimen logistics consolidation "
+                "across overlapping geographies saves $8-12M in courier costs. "
+                "Shared quality assurance function eliminates duplicate accreditation overhead."
+            ),
+        },
+        {
+            "lever": "Procurement",
+            "benchmark_pct_low": 0.8, "benchmark_pct_high": 1.2, "benchmark_pct_median": 1.0,
+            "combined_baseline_usd": 145_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "Combined reagent and consumables spend of ~$85M gives Apex-LabTech leverage "
+                "to renegotiate Roche, Siemens, and Becton Dickinson contracts. "
+                "Estimated 12-18% reduction from volume tiers. "
+                "Medical device and equipment purchasing consolidation adds incremental $3-5M. "
+                "Savings contingent on contract renewal timing — 60% of contracts renew within 18 months."
+            ),
+        },
+        {
+            "lever": "Real Estate",
+            "benchmark_pct_low": 0.3, "benchmark_pct_high": 0.6, "benchmark_pct_median": 0.42,
+            "combined_baseline_usd": 62_000_000,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "LabTech operates 180 labs — most are leased at hospital system campuses. "
+                "Consolidation opportunity is limited to 8 standalone reference labs in cities "
+                "where Apex has hospital-adjacent space. "
+                "Corporate HQ consolidation (LabTech Nashville → Apex Nashville) is straightforward "
+                "but saves only $1.8M/yr. Low confidence pending lease review."
+            ),
+        },
+        {
+            "lever": "Revenue",
+            "benchmark_pct_low": 3.0, "benchmark_pct_high": 6.0, "benchmark_pct_median": 4.5,
+            "combined_baseline_usd": None,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "Revenue synergy from routing Apex's $120M external lab spend to LabTech "
+                "is effectively captured in the Operations lever (cost avoidance). "
+                "Incremental revenue: LabTech AI pathology upsell to Apex's payer and employer "
+                "health plan customers — $15-25M ARR opportunity over 24 months. "
+                "Geographic expansion of LabTech into Apex's hospital campuses in new markets."
+            ),
+        },
+    ]
+
+    for config in lever_configs:
+        lever = levers.get(config["lever"])
+        if not lever:
+            continue
+        pct_low = config["benchmark_pct_low"]
+        pct_high = config["benchmark_pct_high"]
+        baseline = config["combined_baseline_usd"]
+        dl = DealLever(
+            deal_id=deal.id,
+            lever_id=lever.id,
+            benchmark_pct_low=pct_low,
+            benchmark_pct_high=pct_high,
+            benchmark_pct_median=config["benchmark_pct_median"],
+            benchmark_n=7,
+            combined_baseline_usd=baseline,
+            calculated_value_low=int(combined_revenue * pct_low / 100),
+            calculated_value_high=int(combined_revenue * pct_high / 100),
+            status=config["status"],
+            confidence=config["confidence"],
+            advisor_notes=config["advisor_notes"],
+        )
+        db.session.add(dl)
+
+    db.session.flush()
+
+    # Key activities for top levers
+    deal_lever_map = {l.lever.name: l for l in DealLever.query.filter_by(deal_id=deal.id).all()}
+    activities = [
+        {
+            "lever": "Operations", "synergy_type": "cost_reduction",
+            "description": (
+                "Redirect Apex's $120M+ in annual third-party diagnostic spend (Quest, Labcorp) to "
+                "LabTech network. Phased over 18 months as hospital lab contracts expire. "
+                "Net margin capture after LabTech variable costs: ~$28-42M annually."
+            ),
+            "value_low": 28_000_000, "value_high": 42_000_000,
+            "confidence_score": 88.0, "status": "validated",
+        },
+        {
+            "lever": "Procurement", "synergy_type": "cost_reduction",
+            "description": (
+                "Renegotiate Roche Diagnostics and Siemens Healthineers reagent contracts using "
+                "combined $85M spend. Target 15% volume discount unlocked at new tier. "
+                "Savings materialize at next contract renewal cycle (Q2 2027)."
+            ),
+            "value_low": 10_000_000, "value_high": 16_000_000,
+            "confidence_score": 75.0, "status": "identified",
+        },
+        {
+            "lever": "HR", "synergy_type": "cost_reduction",
+            "description": (
+                "Migrate LabTech's 1,800 employees onto Apex self-insured benefits plan. "
+                "Eliminates fully-insured premium at $2,200/employee/year savings. "
+                "Open enrollment window: January 2027."
+            ),
+            "value_low": 3_200_000, "value_high": 4_500_000,
+            "confidence_score": 84.0, "status": "in_analysis",
+        },
+        {
+            "lever": "Finance", "synergy_type": "cost_reduction",
+            "description": (
+                "Consolidate LabTech revenue cycle onto Apex's Cerner RevCycle platform. "
+                "Eliminates LabTech's standalone billing vendor ($2.1M/yr) and improves "
+                "collections rate by estimated 3 points (current LabTech DSO: 48 days)."
+            ),
+            "value_low": 4_500_000, "value_high": 7_000_000,
+            "confidence_score": 79.0, "status": "in_analysis",
+        },
+    ]
+
+    for a in activities:
+        lever_name = a.pop("lever")
+        dl = deal_lever_map.get(lever_name)
+        synergy = Synergy(
+            company1_id=acquirer.id,
+            company2_id=target.id,
+            deal_id=deal.id,
+            deal_lever_id=dl.id if dl else None,
+            **a,
+        )
+        db.session.add(synergy)
+
+    db.session.flush()
+    print(f"  ✓ Deal 2 (Apex Health) complete — {len(activities)} activities")
+
+
+def seed_mercury_capital_deal(levers, functions, categories):
+    """
+    Deal 3: Mercury Capital Management acquires WealthPath Technologies
+    Financial Services, $440M deal, $850M combined revenue, status: active (in diligence)
+    High Finance/IT synergies from dual platform consolidation.
+    """
+    from datetime import date
+
+    acquirer_data = {
+        "name": "Mercury Capital Management",
+        "industry": "Financial Services",
+        "description": (
+            "Mid-market asset manager with $48B AUM across equity, fixed income, and alternatives. "
+            "1,200 institutional clients. Distribution through RIA channel and direct institutional."
+        ),
+        "revenue_usd": 650_000_000,
+        "employees": 2_100,
+        "geography": ["North America", "Europe", "Asia Pacific"],
+        "products": ["Mercury Equity Funds", "Mercury Fixed Income", "Mercury Alternatives", "Mercury Institutional Portal"],
+        "tech_stack": ["Bloomberg", "SimCorp", "Salesforce", "Azure", "Python"],
+        "strengths": ["Investment track record", "Institutional relationships", "Risk management"],
+        "weaknesses": ["Weak retail/HNW channel", "Legacy portfolio management system", "Limited digital advice capability"],
+    }
+    target_data = {
+        "name": "WealthPath Technologies",
+        "industry": "Financial Services",
+        "description": (
+            "Digital wealth management platform serving 280 RIA firms and 14,000 end-investor accounts. "
+            "AI-driven financial planning engine and portfolio rebalancing. $6.2B AUA."
+        ),
+        "revenue_usd": 200_000_000,
+        "employees": 680,
+        "geography": ["North America"],
+        "products": ["WealthPath Advisor", "WealthPath Client Portal", "WealthPath API"],
+        "tech_stack": ["AWS", "React", "Python", "PostgreSQL", "Plaid", "Salesforce"],
+        "strengths": ["RIA relationships", "Modern UX", "Open architecture platform"],
+        "weaknesses": ["Limited investment product depth", "No institutional capability", "Thin gross margins (62%)"],
+    }
+
+    acquirer = Company.query.filter_by(name=acquirer_data["name"]).first()
+    if not acquirer:
+        acquirer = Company(**acquirer_data)
+        db.session.add(acquirer)
+        db.session.flush()
+
+    target = Company.query.filter_by(name=target_data["name"]).first()
+    if not target:
+        target = Company(**target_data)
+        db.session.add(target)
+        db.session.flush()
+
+    deal = Deal.query.filter_by(name="Mercury Capital acquires WealthPath Technologies").first()
+    if deal:
+        print(f"  ⊘ Deal exists: {deal.name}")
+        return
+
+    deal = Deal(
+        name="Mercury Capital acquires WealthPath Technologies",
+        deal_type="acquisition",
+        deal_size_usd=440_000_000,
+        close_date=date(2026, 12, 31),
+        strategic_rationale=(
+            "Mercury acquires WealthPath to establish a direct RIA distribution channel, "
+            "giving its $48B AUM investment products access to WealthPath's 280 RIA firms "
+            "and 14,000 end-investors. WealthPath's digital planning platform modernizes Mercury's "
+            "client portal — a critical gap identified in the 2025 client survey. "
+            "The deal is expected to add $2.8B in AUM in Year 1 through product distribution. "
+            "Deal multiple: 2.2x revenue."
+        ),
+        acquirer_id=acquirer.id,
+        target_id=target.id,
+        status="active",
+    )
+    db.session.add(deal)
+    db.session.flush()
+    print(f"  ✓ Deal: {deal.name}")
+
+    combined_revenue = 850_000_000
+
+    lever_configs = [
+        {
+            "lever": "IT",
+            "benchmark_pct_low": 1.2, "benchmark_pct_high": 1.8, "benchmark_pct_median": 1.5,
+            "combined_baseline_usd": 94_000_000,
+            "status": "in_analysis", "confidence": "medium",
+            "advisor_notes": (
+                "Mercury runs SimCorp Dimension (OMS/PMS); WealthPath runs a modern AWS-native stack. "
+                "Full IT consolidation is a 24-36 month program — SimCorp migration is the constraint. "
+                "Near-term savings: eliminate WealthPath's duplicate Bloomberg terminals ($1.2M/yr), "
+                "consolidate data vendors (Refinitiv, FactSet), and unify identity/SSO. "
+                "Longer-term: migrate WealthPath client portal to Mercury infrastructure."
+            ),
+        },
+        {
+            "lever": "Finance",
+            "benchmark_pct_low": 0.8, "benchmark_pct_high": 1.2, "benchmark_pct_median": 1.0,
+            "combined_baseline_usd": 62_000_000,
+            "status": "validated", "confidence": "high",
+            "advisor_notes": (
+                "WealthPath has a lean finance team of 8 — absorbs into Mercury's 45-person finance org. "
+                "Key savings: eliminate outsourced audit ($900K/yr), merge SEC/FINRA compliance reporting "
+                "programs (significant overlap in Form ADV, 13F filings), and consolidate treasury. "
+                "High confidence — both companies are fiscal-year aligned and audit-clean."
+            ),
+        },
+        {
+            "lever": "HR",
+            "benchmark_pct_low": 0.8, "benchmark_pct_high": 1.2, "benchmark_pct_median": 1.0,
+            "combined_baseline_usd": 58_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "WealthPath's 680 employees move onto Mercury's benefits plan. "
+                "Deferred compensation and carried interest structures at Mercury require "
+                "careful harmonization — several WealthPath execs have earn-out provisions. "
+                "HRIS migration from Rippling to Mercury Workday: 4 months. "
+                "Risk: WealthPath engineering team (120 FTEs) is highly compensated and mobile."
+            ),
+        },
+        {
+            "lever": "Operations",
+            "benchmark_pct_low": 0.7, "benchmark_pct_high": 1.0, "benchmark_pct_median": 0.85,
+            "combined_baseline_usd": 48_000_000,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "Operations synergy is primarily client servicing consolidation: "
+                "WealthPath's 40-person client success team absorbed into Mercury's 85-person "
+                "institutional services group over 12 months. "
+                "Shared middle-office functions (trade settlement, reconciliation) eliminate "
+                "duplicate vendor relationships. Low confidence pending org design decisions."
+            ),
+        },
+        {
+            "lever": "Procurement",
+            "benchmark_pct_low": 0.5, "benchmark_pct_high": 0.8, "benchmark_pct_median": 0.65,
+            "combined_baseline_usd": 34_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "Combined data and analytics spend of ~$22M (Bloomberg, Refinitiv, FactSet, Plaid). "
+                "Renegotiation at combined scale unlocks 10-20% vendor discount. "
+                "SaaS consolidation (Salesforce, Slack, Zoom, Jira): both companies are separately "
+                "licensed — combined contract saves estimated $1.8M/yr. "
+                "D&O and E&O insurance consolidation: $600K-900K annual saving."
+            ),
+        },
+        {
+            "lever": "Real Estate",
+            "benchmark_pct_low": 0.4, "benchmark_pct_high": 0.7, "benchmark_pct_median": 0.52,
+            "combined_baseline_usd": 28_000_000,
+            "status": "validated", "confidence": "high",
+            "advisor_notes": (
+                "WealthPath NYC office (18,000 sq ft, Midtown) co-locates into Mercury's "
+                "existing NYC HQ (Park Ave). Mercury has 8,000 sq ft of available capacity. "
+                "WealthPath lease expires March 2027 — no break clause required. "
+                "Net saving after build-out: $3.2M/yr. Boston WealthPath office (4,500 sq ft) "
+                "consolidates into Mercury Boston. High confidence — lease terms confirmed."
+            ),
+        },
+        {
+            "lever": "Revenue",
+            "benchmark_pct_low": 4.0, "benchmark_pct_high": 8.0, "benchmark_pct_median": 6.0,
+            "combined_baseline_usd": None,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "Primary revenue synergy: distribute Mercury investment products through "
+                "WealthPath's 280 RIA network — target $2.8B AUM in Year 1 at 50bps = $14M ARR. "
+                "Secondary: WealthPath white-label platform to Mercury's institutional clients. "
+                "Revenue synergies are speculative at this stage — contingent on RIA adoption rates "
+                "and product integration timeline. Not included in deal financial model."
+            ),
+        },
+    ]
+
+    for config in lever_configs:
+        lever = levers.get(config["lever"])
+        if not lever:
+            continue
+        pct_low = config["benchmark_pct_low"]
+        pct_high = config["benchmark_pct_high"]
+        baseline = config["combined_baseline_usd"]
+        dl = DealLever(
+            deal_id=deal.id,
+            lever_id=lever.id,
+            benchmark_pct_low=pct_low,
+            benchmark_pct_high=pct_high,
+            benchmark_pct_median=config["benchmark_pct_median"],
+            benchmark_n=7,
+            combined_baseline_usd=baseline,
+            calculated_value_low=int(combined_revenue * pct_low / 100),
+            calculated_value_high=int(combined_revenue * pct_high / 100),
+            status=config["status"],
+            confidence=config["confidence"],
+            advisor_notes=config["advisor_notes"],
+        )
+        db.session.add(dl)
+
+    db.session.flush()
+    deal_lever_map = {l.lever.name: l for l in DealLever.query.filter_by(deal_id=deal.id).all()}
+
+    activities = [
+        {
+            "lever": "IT", "synergy_type": "cost_reduction",
+            "description": (
+                "Consolidate Bloomberg terminal licenses: Mercury 180 seats, WealthPath 22 seats. "
+                "Combined renegotiation at 202 seats unlocks Enterprise tier — estimated 18% discount "
+                "vs current blended rate. Savings: $1.1M/yr from Year 1."
+            ),
+            "value_low": 900_000, "value_high": 1_300_000,
+            "confidence_score": 88.0, "status": "validated",
+        },
+        {
+            "lever": "Finance", "synergy_type": "cost_reduction",
+            "description": (
+                "Merge SEC/FINRA compliance reporting: eliminate WealthPath's standalone Form ADV "
+                "and FINRA annual reporting program. Combined compliance team of 12 handles both "
+                "registrations. External legal/compliance vendor cost reduction: $700K-$1.1M/yr."
+            ),
+            "value_low": 2_800_000, "value_high": 4_200_000,
+            "confidence_score": 85.0, "status": "validated",
+        },
+        {
+            "lever": "Real Estate", "synergy_type": "cost_reduction",
+            "description": (
+                "Exit WealthPath NYC Midtown lease at expiry (March 2027). Absorb 680 WealthPath "
+                "employees into Mercury Park Ave HQ using available capacity. "
+                "Net saving: $3.2M/yr after $450K build-out cost."
+            ),
+            "value_low": 2_800_000, "value_high": 3_600_000,
+            "confidence_score": 92.0, "status": "validated",
+        },
+        {
+            "lever": "Procurement", "synergy_type": "cost_reduction",
+            "description": (
+                "Renegotiate Salesforce Financial Services Cloud contract using combined "
+                "2,780 seat count. Cross into Enterprise Unlimited pricing tier. "
+                "Estimated saving: $820K/yr. Renewal due Q4 2026 — timing is favorable."
+            ),
+            "value_low": 700_000, "value_high": 1_100_000,
+            "confidence_score": 78.0, "status": "identified",
+        },
+    ]
+
+    for a in activities:
+        lever_name = a.pop("lever")
+        dl = deal_lever_map.get(lever_name)
+        synergy = Synergy(
+            company1_id=acquirer.id,
+            company2_id=target.id,
+            deal_id=deal.id,
+            deal_lever_id=dl.id if dl else None,
+            **a,
+        )
+        db.session.add(synergy)
+
+    db.session.flush()
+    print(f"  ✓ Deal 3 (Mercury Capital) complete — {len(activities)} activities")
+
+
+def seed_summit_consumer_deal(levers, functions, categories):
+    """
+    Deal 4: Summit Consumer Brands acquires FreshBrand D2C
+    Consumer Goods, $275M deal, $620M combined revenue, status: draft
+    High Procurement/Operations synergies from supply chain consolidation.
+    """
+    from datetime import date
+
+    acquirer_data = {
+        "name": "Summit Consumer Brands",
+        "industry": "Consumer Goods",
+        "description": (
+            "Multi-category consumer goods company with portfolio of 8 brands in personal care, "
+            "nutrition, and home products. Distributed through Walmart, Target, Amazon, and specialty retail. "
+            "Strong supply chain and manufacturing scale."
+        ),
+        "revenue_usd": 480_000_000,
+        "employees": 3_200,
+        "geography": ["North America", "Europe"],
+        "products": ["Summit Personal Care", "Summit Nutrition", "Summit Home", "Summit Pro"],
+        "tech_stack": ["SAP", "Salesforce", "AWS", "Tableau", "Manhattan Associates"],
+        "strengths": ["Retail distribution", "Manufacturing scale", "Supply chain efficiency"],
+        "weaknesses": ["No D2C capability", "Weak millennial/Gen-Z brand perception", "Limited digital marketing"],
+    }
+    target_data = {
+        "name": "FreshBrand D2C",
+        "industry": "Consumer Goods",
+        "description": (
+            "Fast-growing direct-to-consumer personal care brand. "
+            "Known for sustainable packaging and clean ingredient positioning. "
+            "80% of revenue from DTC subscriptions; 20% from Whole Foods and specialty retail."
+        ),
+        "revenue_usd": 140_000_000,
+        "employees": 520,
+        "geography": ["North America"],
+        "products": ["FreshBrand Skincare", "FreshBrand Body", "FreshBrand Subscription Box"],
+        "tech_stack": ["Shopify Plus", "Klaviyo", "AWS", "NetSuite", "Attentive"],
+        "strengths": ["Brand loyalty (NPS 72)", "DTC subscription model", "Sustainability positioning"],
+        "weaknesses": ["Limited retail distribution", "High customer acquisition cost", "Single manufacturing partner"],
+    }
+
+    acquirer = Company.query.filter_by(name=acquirer_data["name"]).first()
+    if not acquirer:
+        acquirer = Company(**acquirer_data)
+        db.session.add(acquirer)
+        db.session.flush()
+
+    target = Company.query.filter_by(name=target_data["name"]).first()
+    if not target:
+        target = Company(**target_data)
+        db.session.add(target)
+        db.session.flush()
+
+    deal = Deal.query.filter_by(name="Summit Consumer acquires FreshBrand D2C").first()
+    if deal:
+        print(f"  ⊘ Deal exists: {deal.name}")
+        return
+
+    deal = Deal(
+        name="Summit Consumer acquires FreshBrand D2C",
+        deal_type="acquisition",
+        deal_size_usd=275_000_000,
+        close_date=date(2027, 3, 31),
+        strategic_rationale=(
+            "Summit acquires FreshBrand to acquire a credible D2C capability and a "
+            "premium sustainability brand that resonates with consumers under 35 — "
+            "Summit's weakest demographic cohort. FreshBrand's Shopify/Klaviyo stack "
+            "and 480K active subscribers provide an immediate DTC infrastructure for "
+            "Summit's existing brands. Summit's manufacturing and retail relationships "
+            "give FreshBrand the scale to expand into mass retail and reduce its "
+            "dependence on a single contract manufacturer. Deal multiple: 2.0x revenue."
+        ),
+        acquirer_id=acquirer.id,
+        target_id=target.id,
+        status="draft",
+    )
+    db.session.add(deal)
+    db.session.flush()
+    print(f"  ✓ Deal: {deal.name}")
+
+    combined_revenue = 620_000_000
+
+    lever_configs = [
+        {
+            "lever": "IT",
+            "benchmark_pct_low": 0.6, "benchmark_pct_high": 1.0, "benchmark_pct_median": 0.8,
+            "combined_baseline_usd": 42_000_000,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "IT integration is relatively low complexity — FreshBrand's Shopify stack "
+                "can operate independently alongside Summit SAP for 12-24 months. "
+                "Near-term opportunities: consolidate productivity tools (Microsoft 365 + Google Workspace), "
+                "unify analytics (Summit Tableau + FreshBrand Looker). "
+                "Full ERP integration is a Year 2-3 decision pending brand strategy."
+            ),
+        },
+        {
+            "lever": "Finance",
+            "benchmark_pct_low": 0.5, "benchmark_pct_high": 0.8, "benchmark_pct_median": 0.62,
+            "combined_baseline_usd": 28_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "FreshBrand runs NetSuite + outsourced Controller function. "
+                "Migration to Summit SAP is an 8-10 month project. "
+                "Key savings: eliminate outsourced accounting ($680K/yr), consolidate audit, "
+                "and absorb FreshBrand FP&A (3 FTEs) into Summit's 22-person finance team. "
+                "Revenue recognition is straightforward — subscription billing is standard."
+            ),
+        },
+        {
+            "lever": "HR",
+            "benchmark_pct_low": 0.9, "benchmark_pct_high": 1.3, "benchmark_pct_median": 1.1,
+            "combined_baseline_usd": 58_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "FreshBrand is on Rippling with PEO arrangement — move to Summit Workday "
+                "saves approximately $1,800/employee/year ($936K total). "
+                "Benefits consolidation: Summit's scale enables better health/dental rates. "
+                "FreshBrand headcount is lean and talent-critical — minimal restructuring planned. "
+                "Risk: brand team and product team retention is priority."
+            ),
+        },
+        {
+            "lever": "Operations",
+            "benchmark_pct_low": 1.4, "benchmark_pct_high": 2.0, "benchmark_pct_median": 1.7,
+            "combined_baseline_usd": 112_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "Largest lever. FreshBrand relies on single contract manufacturer (Benchmark Labs) "
+                "at premium pricing — Summit's in-house manufacturing can produce equivalent SKUs "
+                "at 35% lower unit cost. Transition timeline: 9-12 months for reformulation/transfer. "
+                "Logistics: FreshBrand's 3PL (Shipbob) costs $4.20/unit — Summit's distribution "
+                "center network brings this to $2.80/unit on 2.4M units/yr. "
+                "Combined warehousing eliminates FreshBrand standalone 3PL footprint."
+            ),
+        },
+        {
+            "lever": "Procurement",
+            "benchmark_pct_low": 1.2, "benchmark_pct_high": 1.8, "benchmark_pct_median": 1.5,
+            "combined_baseline_usd": 88_000_000,
+            "status": "identified", "confidence": "medium",
+            "advisor_notes": (
+                "Summit's scale in raw materials (botanical extracts, packaging) is the "
+                "primary synergy. FreshBrand pays spot rates for sustainable packaging — "
+                "Summit's $45M/yr packaging spend qualifies for preferred supplier pricing "
+                "that saves FreshBrand 18-25% on materials. "
+                "Combined spend with key ingredient suppliers (BASF, Croda) crosses tier thresholds. "
+                "Procurement savings are year 1 — Summit can renegotiate immediately at signing."
+            ),
+        },
+        {
+            "lever": "Real Estate",
+            "benchmark_pct_low": 0.5, "benchmark_pct_high": 0.9, "benchmark_pct_median": 0.68,
+            "combined_baseline_usd": 22_000_000,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "FreshBrand leases NYC brand/marketing office (8,000 sq ft) and Austin "
+                "operations hub (12,000 sq ft). Summit has Austin presence with available capacity. "
+                "Austin consolidation is straightforward at lease expiry (18 months). "
+                "NYC office: FreshBrand brand team prefers standalone identity — retention risk "
+                "if consolidated. Low confidence pending brand strategy decision."
+            ),
+        },
+        {
+            "lever": "Revenue",
+            "benchmark_pct_low": 3.5, "benchmark_pct_high": 7.0, "benchmark_pct_median": 5.0,
+            "combined_baseline_usd": None,
+            "status": "identified", "confidence": "low",
+            "advisor_notes": (
+                "Revenue synergy from retail distribution: Summit places FreshBrand into "
+                "Walmart and Target (currently in Whole Foods only). Modeled at $25-45M "
+                "incremental retail revenue in Year 2 — dependent on retail buyer approval. "
+                "Digital synergy: Summit's 8 existing brands gain FreshBrand DTC infrastructure "
+                "and 480K subscriber list. Upside is significant but early-stage estimate."
+            ),
+        },
+    ]
+
+    for config in lever_configs:
+        lever = levers.get(config["lever"])
+        if not lever:
+            continue
+        pct_low = config["benchmark_pct_low"]
+        pct_high = config["benchmark_pct_high"]
+        baseline = config["combined_baseline_usd"]
+        dl = DealLever(
+            deal_id=deal.id,
+            lever_id=lever.id,
+            benchmark_pct_low=pct_low,
+            benchmark_pct_high=pct_high,
+            benchmark_pct_median=config["benchmark_pct_median"],
+            benchmark_n=7,
+            combined_baseline_usd=baseline,
+            calculated_value_low=int(combined_revenue * pct_low / 100),
+            calculated_value_high=int(combined_revenue * pct_high / 100),
+            status=config["status"],
+            confidence=config["confidence"],
+            advisor_notes=config["advisor_notes"],
+        )
+        db.session.add(dl)
+
+    db.session.flush()
+    deal_lever_map = {l.lever.name: l for l in DealLever.query.filter_by(deal_id=deal.id).all()}
+
+    activities = [
+        {
+            "lever": "Operations", "synergy_type": "cost_reduction",
+            "description": (
+                "Transfer FreshBrand manufacturing from Benchmark Labs (contract) to Summit's "
+                "Cincinnati facility. Unit cost reduction from $4.80 to $3.12 on core SKUs. "
+                "Requires 9-month reformulation and transfer process. "
+                "Savings: $4.0-5.8M/yr at 2.4M annual units."
+            ),
+            "value_low": 4_000_000, "value_high": 5_800_000,
+            "confidence_score": 76.0, "status": "identified",
+        },
+        {
+            "lever": "Procurement", "synergy_type": "cost_reduction",
+            "description": (
+                "Apply Summit's sustainable packaging supplier agreements (Sealed Air, Berry Global) "
+                "to FreshBrand's packaging needs. FreshBrand currently pays premium for equivalent "
+                "recycled materials. Immediate saving at contract rollover: $2.2-3.4M/yr."
+            ),
+            "value_low": 2_200_000, "value_high": 3_400_000,
+            "confidence_score": 82.0, "status": "identified",
+        },
+        {
+            "lever": "Operations", "synergy_type": "cost_reduction",
+            "description": (
+                "Consolidate FreshBrand fulfillment from Shipbob ($4.20/unit) into Summit's "
+                "distribution centers ($2.80/unit). 2.4M annual DTC units = $3.4M annual saving. "
+                "Transition requires 6 months of parallel operations."
+            ),
+            "value_low": 2_800_000, "value_high": 3_600_000,
+            "confidence_score": 80.0, "status": "identified",
+        },
+        {
+            "lever": "Procurement", "synergy_type": "cost_reduction",
+            "description": (
+                "Combine botanical ingredient purchasing with Summit's BASF and Croda contracts. "
+                "FreshBrand's $8M ingredient spend moves to Summit's preferred pricing tier. "
+                "Estimated 12% cost reduction."
+            ),
+            "value_low": 800_000, "value_high": 1_200_000,
+            "confidence_score": 74.0, "status": "identified",
+        },
+    ]
+
+    for a in activities:
+        lever_name = a.pop("lever")
+        dl = deal_lever_map.get(lever_name)
+        synergy = Synergy(
+            company1_id=acquirer.id,
+            company2_id=target.id,
+            deal_id=deal.id,
+            deal_lever_id=dl.id if dl else None,
+            **a,
+        )
+        db.session.add(synergy)
+
+    db.session.flush()
+    print(f"  ✓ Deal 4 (Summit Consumer) complete — {len(activities)} activities")
+
 def main():
     app = create_app("development")
     with app.app_context():
@@ -1006,6 +1804,11 @@ def main():
 
         print("→ Lever playbooks (learning section content)")
         seed_playbooks(user)
+
+        print("→ Additional demo deals")
+        seed_apex_health_deal(levers, functions, categories)
+        seed_mercury_capital_deal(levers, functions, categories)
+        seed_summit_consumer_deal(levers, functions, categories)
 
         db.session.commit()
 

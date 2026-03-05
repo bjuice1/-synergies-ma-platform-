@@ -3,15 +3,84 @@ from flask import Blueprint, request, jsonify
 from backend.app.models.deal import Deal
 from backend.app.models.company import Company
 from backend.app.models.synergy import Synergy
-from backend.app.models.lever import DealLever, SynergyLever
+from backend.app.models.lever import DealLever, SynergyLever, BenchmarkDataPoint
 from backend.app.services import synergy_generator  # Direct import to avoid __init__ cascade
 from backend.app.extensions import db
 from backend.utils.auth_decorators import require_role
 from backend.utils.exceptions import ValidationError, NotFoundError
 from datetime import datetime
+from sqlalchemy import func
 import logging
 
 logger = logging.getLogger(__name__)
+
+def auto_generate_deal_levers(deal, acquirer, target):
+    """
+    Auto-generate DealLever rows for a new deal using benchmark averages.
+
+    Uses all BenchmarkDataPoints to compute pct_low = min, pct_high = max,
+    pct_median = mean for each lever. calculated_value = combined_revenue * pct / 100.
+
+    Revenue lever is skipped if no datapoints exist.
+    Never raises — lever gen failure must not break deal creation.
+    """
+    try:
+        combined_revenue = 0
+        if acquirer and acquirer.revenue_usd:
+            combined_revenue += acquirer.revenue_usd
+        if target and target.revenue_usd:
+            combined_revenue += target.revenue_usd
+
+        levers = SynergyLever.query.order_by(SynergyLever.sort_order).all()
+        benchmark_n_result = db.session.query(
+            func.count(db.distinct(BenchmarkDataPoint.project_id))
+        ).scalar() or 0
+
+        created = 0
+        for lever in levers:
+            existing = DealLever.query.filter_by(deal_id=deal.id, lever_id=lever.id).first()
+            if existing:
+                continue
+
+            pct_values = [
+                row[0] for row in
+                db.session.query(BenchmarkDataPoint.synergy_pct)
+                .filter(BenchmarkDataPoint.lever_id == lever.id)
+                .all()
+            ]
+
+            if not pct_values:
+                continue
+
+            pct_sorted = sorted(pct_values)
+            pct_low = round(pct_sorted[0], 2)
+            pct_high = round(pct_sorted[-1], 2)
+            pct_median = round(sum(pct_sorted) / len(pct_sorted), 2)
+
+            dl = DealLever(
+                deal_id=deal.id,
+                lever_id=lever.id,
+                benchmark_pct_low=pct_low,
+                benchmark_pct_high=pct_high,
+                benchmark_pct_median=pct_median,
+                benchmark_n=benchmark_n_result,
+                combined_baseline_usd=None,
+                calculated_value_low=int(combined_revenue * pct_low / 100) if combined_revenue else None,
+                calculated_value_high=int(combined_revenue * pct_high / 100) if combined_revenue else None,
+                status='identified',
+                confidence='medium',
+                advisor_notes=None,
+            )
+            db.session.add(dl)
+            created += 1
+
+        if created > 0:
+            db.session.flush()
+            logger.info(f"Auto-generated {created} DealLevers for deal {deal.id}")
+
+    except Exception as e:
+        logger.error(f"Failed to auto-generate levers for deal {deal.id}: {e}", exc_info=True)
+
 
 bp = Blueprint('deals', __name__, url_prefix='/api/deals')
 
@@ -161,6 +230,8 @@ def create_deal():
         )
 
         db.session.add(deal)
+        db.session.flush()  # Get deal ID before lever generation
+        auto_generate_deal_levers(deal, acquirer, target)
         db.session.commit()
 
         return jsonify(deal.to_dict()), 201
