@@ -95,6 +95,7 @@ class Deal(db.Model):
             'acquirer': self.acquirer.to_dict() if self.acquirer else None,
             'target': self.target.to_dict() if self.target else None,
             'status': self.status,
+            'deal_briefing_document': self.deal_briefing_document,
             'created_at': self.created_at.isoformat() if self.created_at else None,
             'updated_at': self.updated_at.isoformat() if self.updated_at else None,
         }

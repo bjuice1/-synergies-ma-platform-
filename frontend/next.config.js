@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+  generateBuildId: async () => 'build-' + Date.now(),
   typescript: {
     ignoreBuildErrors: true,
   },
@@ -7,10 +8,11 @@ const nextConfig = {
     ignoreDuringBuilds: true,
   },
   async rewrites() {
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:5001';
     return [
       {
         source: '/api/:path*',
-        destination: 'http://localhost:5001/api/:path*',
+        destination: `${backendUrl}/api/:path*`,
       },
     ];
   },

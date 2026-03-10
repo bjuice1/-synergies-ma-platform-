@@ -78,6 +78,13 @@ def auto_generate_deal_levers(deal, acquirer, target):
             func.count(db.distinct(BenchmarkDataPoint.project_id))
         ).scalar() or 0
 
+        def _pct(data, p):
+            """Linear interpolation percentile on a sorted list."""
+            idx = (len(data) - 1) * p / 100
+            lo = int(idx)
+            hi = min(lo + 1, len(data) - 1)
+            return round(data[lo] + (data[hi] - data[lo]) * (idx - lo), 2)
+
         created = 0
         for lever in levers:
             existing = DealLever.query.filter_by(deal_id=deal.id, lever_id=lever.id).first()
@@ -95,12 +102,26 @@ def auto_generate_deal_levers(deal, acquirer, target):
                 continue
 
             pct_sorted = sorted(pct_values)
-            pct_low = round(pct_sorted[0], 2)
-            pct_high = round(pct_sorted[-1], 2)
-            pct_median = round(sum(pct_sorted) / len(pct_sorted), 2)
+            n_pts = len(pct_sorted)
 
-            val_low  = int(combined_revenue * pct_low  / 100) if combined_revenue else None
-            val_high = int(combined_revenue * pct_high / 100) if combined_revenue else None
+            # Keep absolute min/max for full-dispersion reference
+            pct_low  = round(pct_sorted[0], 2)
+            pct_high = round(pct_sorted[-1], 2)
+            pct_median = round(sum(pct_sorted) / n_pts, 2)
+
+            # IQR: P25–P75 — IC-ready range
+
+            pct_p25 = _pct(pct_sorted, 25)
+            pct_p75 = _pct(pct_sorted, 75)
+
+            # calculated_value derives from P25/P75 (IQR), not absolute min/max
+            val_low  = int(combined_revenue * pct_p25 / 100) if combined_revenue else None
+            val_high = int(combined_revenue * pct_p75 / 100) if combined_revenue else None
+
+            # Realization layer: 75% default capture rate
+            factor = 0.75
+            realizable_low  = int(val_low  * factor) if val_low  is not None else None
+            realizable_high = int(val_high * factor) if val_high is not None else None
 
             dl = DealLever(
                 deal_id=deal.id,
@@ -108,10 +129,15 @@ def auto_generate_deal_levers(deal, acquirer, target):
                 benchmark_pct_low=pct_low,
                 benchmark_pct_high=pct_high,
                 benchmark_pct_median=pct_median,
+                benchmark_pct_p25=pct_p25,
+                benchmark_pct_p75=pct_p75,
                 benchmark_n=benchmark_n_result,
                 combined_baseline_usd=None,
                 calculated_value_low=val_low,
                 calculated_value_high=val_high,
+                realization_factor=factor,
+                realizable_value_low=realizable_low,
+                realizable_value_high=realizable_high,
                 status='identified',
                 confidence='medium',
                 advisor_notes=None,
@@ -412,6 +438,8 @@ def get_deal_levers(deal_id):
         cost_levers = [dl for dl in deal_levers if dl.lever and dl.lever.lever_type == 'cost']
         total_low = sum(dl.calculated_value_low or 0 for dl in cost_levers)
         total_high = sum(dl.calculated_value_high or 0 for dl in cost_levers)
+        total_realizable_low  = sum(dl.realizable_value_low  or 0 for dl in cost_levers)
+        total_realizable_high = sum(dl.realizable_value_high or 0 for dl in cost_levers)
         combined_revenue = (deal.acquirer.revenue_usd or 0) + (deal.target.revenue_usd or 0) if deal.acquirer and deal.target else 0
 
         return jsonify({
@@ -420,10 +448,13 @@ def get_deal_levers(deal_id):
             'summary': {
                 'total_cost_synergy_low': total_low,
                 'total_cost_synergy_high': total_high,
+                'total_realizable_low': total_realizable_low,
+                'total_realizable_high': total_realizable_high,
                 'combined_revenue': combined_revenue,
                 'total_pct_low': round(total_low / combined_revenue * 100, 1) if combined_revenue else None,
                 'total_pct_high': round(total_high / combined_revenue * 100, 1) if combined_revenue else None,
                 'benchmark_n': deal_levers[0].benchmark_n if deal_levers else 0,
+                'realization_factor': 0.75,
             }
         }), 200
 
@@ -518,6 +549,24 @@ def post_lever_comment(deal_id, lever_id):
         return jsonify({'error': 'Internal server error'}), 500
 
 
+@bp.route('/<int:deal_id>/levers/<int:lever_id>/comments/<int:comment_id>', methods=['PATCH'])
+@require_role('analyst', 'admin')
+def patch_lever_comment(deal_id, lever_id, comment_id):
+    """Toggle is_key_finding on a lever comment."""
+    try:
+        from backend.app.models.lever import LeverComment
+        comment = LeverComment.query.filter_by(id=comment_id, deal_lever_id=lever_id).first_or_404()
+        data = request.get_json() or {}
+        if 'is_key_finding' in data:
+            comment.is_key_finding = bool(data['is_key_finding'])
+        db.session.commit()
+        return jsonify(comment.to_dict()), 200
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error patching comment {comment_id}: {e}", exc_info=True)
+        return jsonify({'error': 'Internal server error'}), 500
+
+
 @bp.route('/<int:deal_id>/levers/<int:lever_id>/refine', methods=['POST'])
 @require_role('analyst', 'admin')
 def refine_lever_estimate(deal_id, lever_id):
@@ -537,6 +586,9 @@ def refine_lever_estimate(deal_id, lever_id):
         if not filled_qa:
             return jsonify({'error': 'No diligence answers found. Fill in some questions first.'}), 400
 
+        # Use IQR (P25–P75) as the primary reference; fall back to min/max if not yet populated
+        benchmark_p25 = dl.benchmark_pct_p25 or dl.benchmark_pct_low  or 0
+        benchmark_p75 = dl.benchmark_pct_p75 or dl.benchmark_pct_high or 0
         benchmark_low  = dl.benchmark_pct_low  or 0
         benchmark_high = dl.benchmark_pct_high or 0
         lever_name     = dl.lever.name if dl.lever else 'this lever'
@@ -555,16 +607,17 @@ def refine_lever_estimate(deal_id, lever_id):
 - Transaction: {acq_name} acquires {tgt_name}
 - Combined revenue: ${combined/1e6:.0f}M
 - Lever: {lever_name}
-- Benchmark range (comparable deals): {benchmark_low:.2f}%–{benchmark_high:.2f}% of combined revenue
+- Benchmark IQR range (P25–P75 of {dl.benchmark_n or 'N'} comparable deals): {benchmark_p25:.2f}%–{benchmark_p75:.2f}% of combined revenue
+- Full benchmark dispersion (min–max): {benchmark_low:.2f}%–{benchmark_high:.2f}%
 
 ## Diligence Findings
 {qa_text}
 
 ## Your Task
-Based on the diligence findings, position this deal within (or explain deviation from) the benchmark range.
-- Consider factors that suggest higher or lower synergy potential
-- Stay within {benchmark_low:.2f}%–{benchmark_high:.2f}% unless the evidence strongly justifies deviation
-- Be specific about which findings drove your estimate
+Based on the diligence findings, position this deal within the IQR benchmark range.
+- Default to positioning within the IQR ({benchmark_p25:.2f}%–{benchmark_p75:.2f}%) for a defensible IC-ready estimate
+- Only deviate toward the full dispersion range ({benchmark_low:.2f}%–{benchmark_high:.2f}%) if the findings strongly justify it, and explain why
+- Be specific about which diligence findings drove your estimate
 
 Respond ONLY with a JSON object in this exact format (no markdown, no explanation outside JSON):
 {{
@@ -598,10 +651,13 @@ Respond ONLY with a JSON object in this exact format (no markdown, no explanatio
         dl.refined_pct_high        = pct_high
         dl.refinement_rationale    = rationale
 
-        # Recalculate $ values using refined pcts × combined revenue
+        # Recalculate $ values using refined pcts × combined revenue, then apply realization layer
         if combined > 0:
             dl.calculated_value_low  = int(combined * pct_low  / 100)
             dl.calculated_value_high = int(combined * pct_high / 100)
+            factor = dl.realization_factor if dl.realization_factor is not None else 0.75
+            dl.realizable_value_low  = int(dl.calculated_value_low  * factor)
+            dl.realizable_value_high = int(dl.calculated_value_high * factor)
 
         db.session.commit()
         return jsonify(dl.to_dict()), 200
@@ -947,12 +1003,15 @@ def export_excel(deal_id):
         ws2.column_dimensions['A'].width = 18
         ws2.column_dimensions['B'].width = 16
         ws2.column_dimensions['C'].width = 16
-        ws2.column_dimensions['D'].width = 12
-        ws2.column_dimensions['E'].width = 12
+        ws2.column_dimensions['D'].width = 16
+        ws2.column_dimensions['E'].width = 16
         ws2.column_dimensions['F'].width = 14
-        ws2.column_dimensions['G'].width = 40
+        ws2.column_dimensions['G'].width = 14
+        ws2.column_dimensions['H'].width = 12
+        ws2.column_dimensions['I'].width = 12
+        ws2.column_dimensions['J'].width = 40
 
-        ws2.merge_cells('A1:G1')
+        ws2.merge_cells('A1:J1')
         t2 = ws2['A1']
         t2.value = f'{deal.name} — Lever Detail'
         t2.font = Font(bold=True, size=14, color=WHITE)
@@ -960,7 +1019,13 @@ def export_excel(deal_id):
         t2.alignment = Alignment(horizontal='left', vertical='center')
         ws2.row_dimensions[1].height = 32
 
-        hdrs2 = ['Lever', 'Synergy Low', 'Synergy High', 'Bmark Low%', 'Bmark High%', 'Confidence', 'Advisor Notes']
+        hdrs2 = [
+            'Lever',
+            'Theoretical Low (P25)', 'Theoretical High (P75)',
+            'Realizable Low (75%)', 'Realizable High (75%)',
+            'IQR Low%', 'IQR High%',
+            'Confidence', 'Realization Factor', 'Advisor Notes',
+        ]
         r2 = 2
         for ci, h in enumerate(hdrs2, 1):
             hdr(ws2, r2, ci, h, size=9, bg=MGRAY, fg=DKTEXT)
@@ -968,13 +1033,17 @@ def export_excel(deal_id):
 
         for lever in levers:
             bg = LGRAY if r2 % 2 == 0 else WHITE
-            cell(ws2, r2, 1, lever.lever.name, bold=True, bg=bg)
-            cell(ws2, r2, 2, fmt_m(lever.calculated_value_low), bg=bg, align='right')
-            cell(ws2, r2, 3, fmt_m(lever.calculated_value_high), bg=bg, align='right')
-            cell(ws2, r2, 4, f'{lever.benchmark_pct_low:.2f}%' if lever.benchmark_pct_low is not None else '—', bg=bg, align='right', fg=SUBTEXT)
-            cell(ws2, r2, 5, f'{lever.benchmark_pct_high:.2f}%' if lever.benchmark_pct_high is not None else '—', bg=bg, align='right', fg=SUBTEXT)
-            cell(ws2, r2, 6, lever.confidence or 'medium', bg=bg, fg=SUBTEXT)
-            cell(ws2, r2, 7, lever.advisor_notes or '', bg=bg, wrap=True)
+            factor = lever.realization_factor or 0.75
+            cell(ws2, r2, 1,  lever.lever.name, bold=True, bg=bg)
+            cell(ws2, r2, 2,  fmt_m(lever.calculated_value_low),   bg=bg, align='right')
+            cell(ws2, r2, 3,  fmt_m(lever.calculated_value_high),  bg=bg, align='right')
+            cell(ws2, r2, 4,  fmt_m(lever.realizable_value_low),   bg=bg, align='right')
+            cell(ws2, r2, 5,  fmt_m(lever.realizable_value_high),  bg=bg, align='right')
+            cell(ws2, r2, 6,  f'{lever.benchmark_pct_p25:.2f}%' if lever.benchmark_pct_p25 is not None else '—', bg=bg, align='right', fg=SUBTEXT)
+            cell(ws2, r2, 7,  f'{lever.benchmark_pct_p75:.2f}%' if lever.benchmark_pct_p75 is not None else '—', bg=bg, align='right', fg=SUBTEXT)
+            cell(ws2, r2, 8,  lever.confidence or 'medium', bg=bg, fg=SUBTEXT)
+            cell(ws2, r2, 9,  f'{int(factor * 100)}%', bg=bg, align='right', fg=SUBTEXT)
+            cell(ws2, r2, 10, lever.advisor_notes or '', bg=bg, wrap=True)
             r2 += 1
 
         # ── Sheet 3: Activities ────────────────────────────────────

@@ -245,6 +245,11 @@ export const dealsApi = {
     return response.data;
   },
 
+  flagComment: async (dealId: number, leverId: number, commentId: number, isKeyFinding: boolean): Promise<LeverComment> => {
+    const response = await api.patch<LeverComment>(`/deals/${dealId}/levers/${leverId}/comments/${commentId}`, { is_key_finding: isKeyFinding });
+    return response.data;
+  },
+
   refineLever: async (dealId: number, leverId: number): Promise<DealLever> => {
     const response = await api.post<DealLever>(`/deals/${dealId}/levers/${leverId}/refine`);
     return response.data;

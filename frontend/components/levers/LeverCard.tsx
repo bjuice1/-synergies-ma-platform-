@@ -9,7 +9,7 @@ import {
 import { formatCompactNumber } from '@/lib/utils';
 import { dealsApi, usersApi } from '@/lib/api';
 import { LEVER_SUBTYPES, prePopulateChecklist } from '@/lib/leverSubtypes';
-import type { DealLever, LeverWithPlaybook, Company, DealChatContext, LeverComment, User } from '@/lib/types';
+import type { DealLever, LeverWithPlaybook, Company, DealChatContext, LeverComment, User, DealPerspective } from '@/lib/types';
 
 const LEVER_ICONS: Record<string, string> = {
   IT:             '💻',
@@ -42,10 +42,11 @@ interface LeverCardProps {
   playbook: LeverWithPlaybook | null;
   acquirer: Company | undefined;
   target: Company | undefined;
+  perspective?: DealPerspective;
   onUpdated?: (updated: DealLever) => void;
 }
 
-export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbook, acquirer, target, onUpdated }: LeverCardProps) {
+export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbook, acquirer, target, perspective: dealPerspective = 'combined', onUpdated }: LeverCardProps) {
   const router = useRouter();
   const questions = playbook?.playbook?.diligence_questions ?? [];
   const redFlags  = playbook?.playbook?.red_flags ?? [];
@@ -88,17 +89,65 @@ export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbo
 
   const subtypes      = LEVER_SUBTYPES[lever.lever_name] ?? [];
   const answeredCount = questions.filter(q => envData[q]?.trim()).length;
+  const keyFindingCount = comments.filter(c => c.is_key_finding).length;
+
+  // Per-lever perspective override — defaults to deal-level perspective
+  const [localPerspective, setLocalPerspective] = useState<DealPerspective>(dealPerspective);
+  // Sync if deal-level perspective changes
+  useEffect(() => { setLocalPerspective(dealPerspective); }, [dealPerspective]);
+
+  // Perspective scaling: acquirer/target views scale by revenue share
+  const acqRev = acquirer?.revenue_usd ?? 0;
+  const tgtRev = target?.revenue_usd ?? 0;
+  const perspectiveScale = localPerspective === 'acquirer'
+    ? (combinedRevenue > 0 ? acqRev / combinedRevenue : 0.5)
+    : localPerspective === 'target'
+    ? (combinedRevenue > 0 ? tgtRev / combinedRevenue : 0.5)
+    : 1;
+  const perspectiveLabel = localPerspective === 'acquirer'
+    ? (acquirer?.name ?? 'Acquirer')
+    : localPerspective === 'target'
+    ? (target?.name ?? 'Target')
+    : 'Combined';
+
+  function scaleVal(v: number | null | undefined): number {
+    if (v == null) return 0;
+    return Math.round(v * perspectiveScale);
+  }
 
   const pctLow    = lever.benchmark_pct_low;
   const pctHigh   = lever.benchmark_pct_high;
   const pctMedian = lever.benchmark_pct_median;
+  const pctP25    = lever.benchmark_pct_p25 ?? lever.benchmark_pct_low;
+  const pctP75    = lever.benchmark_pct_p75 ?? lever.benchmark_pct_high;
+  const realizationFactor = lever.realization_factor ?? 0.75;
   const maxPct    = isRevenue ? 8.0 : 3.0;
-  const barStart  = Math.min((pctLow  / maxPct) * 100, 100);
-  const barWidth  = Math.min((pctHigh / maxPct) * 100, 100) - barStart;
+  // Bar visualizes IQR (P25–P75), not full dispersion
+  const barStart  = Math.min((pctP25 / maxPct) * 100, 100);
+  const barWidth  = Math.min((pctP75 / maxPct) * 100, 100) - barStart;
   const medianPos = pctMedian != null ? Math.min((pctMedian / maxPct) * 100, 100) : null;
   const barColor  = isRevenue ? 'bg-sky-500' : 'bg-[#D04A02]';
   const medianValue = (combinedRevenue && pctMedian != null)
     ? Math.round(combinedRevenue * pctMedian / 100) : null;
+
+  // Realizable values: use server-calculated if available, otherwise derive client-side; then apply perspective scale
+  const baseRealizableLow  = lever.realizable_value_low  ?? (lever.calculated_value_low  != null ? Math.round(lever.calculated_value_low  * realizationFactor) : null);
+  const baseRealizableHigh = lever.realizable_value_high ?? (lever.calculated_value_high != null ? Math.round(lever.calculated_value_high * realizationFactor) : null);
+  const realizableLow  = scaleVal(baseRealizableLow);
+  const realizableHigh = scaleVal(baseRealizableHigh);
+  const scaledCalcLow  = scaleVal(lever.calculated_value_low);
+  const scaledCalcHigh = scaleVal(lever.calculated_value_high);
+
+  async function handleFlagComment(commentId: number, current: boolean) {
+    const flagged = !current;
+    setComments(prev => prev.map(c => c.id === commentId ? { ...c, is_key_finding: flagged } : c));
+    try {
+      await dealsApi.flagComment(lever.deal_id, lever.id, commentId, flagged);
+    } catch {
+      // revert on failure
+      setComments(prev => prev.map(c => c.id === commentId ? { ...c, is_key_finding: current } : c));
+    }
+  }
 
   useEffect(() => {
     if (prePopDone.current || !questions.length) return;
@@ -284,6 +333,11 @@ export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbo
             <div className="min-w-0 relative">
               <div className="flex items-center gap-2 flex-wrap">
                 <h3 className="text-base font-bold text-gray-900">{lever.lever_name}</h3>
+                {keyFindingCount > 0 && (
+                  <span className="inline-flex items-center gap-1 px-1.5 py-0.5 rounded text-xs font-semibold bg-amber-50 border border-amber-200 text-amber-700">
+                    ⚑ {keyFindingCount} key {keyFindingCount === 1 ? 'finding' : 'findings'}
+                  </span>
+                )}
 
                 {/* Status selector */}
                 <div className="relative" onClick={e => e.stopPropagation()}>
@@ -374,29 +428,50 @@ export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbo
           <div className="flex items-start gap-3 flex-shrink-0">
             {!isExcluded && (
               <div className="text-right">
+                {/* Perspective toggle pills */}
+                <div className="flex items-center gap-1 justify-end mb-2" onClick={e => e.stopPropagation()}>
+                  {(['combined', 'acquirer', 'target'] as DealPerspective[]).map(p => (
+                    <button
+                      key={p}
+                      onClick={() => setLocalPerspective(p)}
+                      className={`px-2 py-0.5 rounded-full text-xs font-medium transition-colors ${
+                        localPerspective === p
+                          ? 'bg-gray-900 text-white'
+                          : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
+                      }`}
+                    >
+                      {p === 'combined' ? 'Total' : p === 'acquirer' ? (acquirer?.name?.split(' ')[0] ?? 'Acq') : (target?.name?.split(' ')[0] ?? 'Tgt')}
+                    </button>
+                  ))}
+                </div>
+
                 {refinedLow != null ? (
                   <>
-                    <p className="text-xs text-emerald-600 font-medium mb-1">Deal estimate ✦</p>
+                    <p className="text-xs text-emerald-600 font-medium mb-1">Deal estimate ✦{localPerspective !== 'combined' ? ` · ${perspectiveLabel}` : ''}</p>
                     <p className="text-xl font-bold text-gray-900 font-mono tabular-nums">
-                      {formatCompactNumber(refinedValueLow ?? lever.calculated_value_low)}
+                      {formatCompactNumber(scaleVal(refinedValueLow ?? lever.calculated_value_low))}
                       <span className="text-gray-300 font-normal text-base mx-1.5">–</span>
-                      {formatCompactNumber(refinedValueHigh ?? lever.calculated_value_high)}
+                      {formatCompactNumber(scaleVal(refinedValueHigh ?? lever.calculated_value_high))}
                     </p>
                     <p className="text-xs text-emerald-600 mt-0.5 font-mono">
                       {refinedLow.toFixed(2)}–{refinedHigh!.toFixed(2)}%
-                      <span className="text-gray-400 ml-1">· bmark {pctLow}–{pctHigh}%</span>
+                      <span className="text-gray-400 ml-1">· IQR {pctP25}–{pctP75}%</span>
                     </p>
                   </>
                 ) : (
                   <>
-                    <p className="text-xs text-gray-400 mb-1">Synergy opportunity</p>
+                    <p className="text-xs text-[#D04A02] font-medium mb-1">
+                      Realizable ({Math.round(realizationFactor * 100)}%){localPerspective !== 'combined' ? ` · ${perspectiveLabel}` : ''}
+                    </p>
                     <p className="text-xl font-bold text-gray-900 font-mono tabular-nums">
-                      {formatCompactNumber(lever.calculated_value_low)}
+                      {formatCompactNumber(realizableLow ?? scaledCalcLow)}
                       <span className="text-gray-300 font-normal text-base mx-1.5">–</span>
-                      {formatCompactNumber(lever.calculated_value_high)}
+                      {formatCompactNumber(realizableHigh ?? scaledCalcHigh)}
                     </p>
                     <p className="text-xs text-gray-400 mt-0.5 font-mono">
-                      {pctLow}–{pctHigh}% of combined rev
+                      <span className="text-gray-500">{pctP25}–{pctP75}% IQR</span>
+                      <span className="mx-1">·</span>
+                      theoretical {formatCompactNumber(scaledCalcLow)}–{formatCompactNumber(scaledCalcHigh)}
                     </p>
                   </>
                 )}
@@ -411,8 +486,8 @@ export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbo
         {!isExcluded && (
           <div className="mt-4">
             <div className="flex items-center justify-between text-xs text-gray-400 mb-1.5">
-              <span>Benchmark range</span>
-              <span className="font-mono text-gray-500">{pctLow}% – {pctHigh}%</span>
+              <span>Benchmark IQR (P25–P75)</span>
+              <span className="font-mono text-gray-500">{pctP25}% – {pctP75}%</span>
             </div>
             <div className="h-1.5 bg-gray-100 rounded-full overflow-visible relative">
               <div
@@ -585,22 +660,32 @@ export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbo
                 <span className="text-gray-700">{formatCompactNumber(combinedRevenue)}</span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-gray-500">Benchmark low ({pctLow}%)</span>
+                <span className="text-gray-500">IQR low — P25 ({pctP25}%)</span>
                 <span className="text-gray-900">{formatCompactNumber(lever.calculated_value_low)}</span>
               </div>
               {medianValue != null && (
                 <div className="flex items-center justify-between">
-                  <span className="text-gray-500">Benchmark median ({pctMedian}%)</span>
+                  <span className="text-gray-500">Median ({pctMedian}%)</span>
                   <span className={isRevenue ? 'text-sky-600' : 'text-[#D04A02]'}>{formatCompactNumber(medianValue)}</span>
                 </div>
               )}
-              <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-2">
-                <span className="text-gray-500">Benchmark high ({pctHigh}%)</span>
+              <div className="flex items-center justify-between">
+                <span className="text-gray-500">IQR high — P75 ({pctP75}%)</span>
                 <span className="text-gray-900 font-bold">{formatCompactNumber(lever.calculated_value_high)}</span>
+              </div>
+              <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-2">
+                <span className="text-gray-500">Realization ({Math.round(realizationFactor * 100)}% capture)</span>
+                <span className={`font-bold ${isRevenue ? 'text-sky-600' : 'text-[#D04A02]'}`}>
+                  {formatCompactNumber(realizableLow ?? lever.calculated_value_low)}–{formatCompactNumber(realizableHigh ?? lever.calculated_value_high)}
+                </span>
+              </div>
+              <div className="flex items-center justify-between text-xs text-gray-400 pt-1">
+                <span>Full dispersion (min–max)</span>
+                <span>{pctLow}%–{pctHigh}%</span>
               </div>
             </div>
             <p className="text-xs text-gray-400 mt-3">
-              Based on {benchmarkN} comparable transactions. Figures = benchmark % × combined revenue.
+              Based on {benchmarkN} comparable transactions. IQR range (P25–P75) × combined revenue × {Math.round(realizationFactor * 100)}% capture rate.
             </p>
           </div>
 
@@ -635,18 +720,54 @@ export function LeverCard({ lever, dealName, combinedRevenue, benchmarkN, playbo
             )}
 
             {comments.length > 0 && (
-              <div className="space-y-3 mb-3">
+              <div className="space-y-2 mb-3">
+                {/* Key findings pinned first */}
+                {comments.filter(c => c.is_key_finding).length > 0 && (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-2.5 mb-3">
+                    <p className="text-xs font-semibold text-amber-700 mb-2">⚑ Key Findings</p>
+                    <div className="space-y-2">
+                      {comments.filter(c => c.is_key_finding).map(c => (
+                        <div key={c.id} className="flex gap-2">
+                          <div className="w-5 h-5 rounded-full bg-amber-600 text-white text-xs flex items-center justify-center flex-shrink-0 font-medium">
+                            {c.author_name.charAt(0)}
+                          </div>
+                          <div className="flex-1 min-w-0">
+                            <div className="flex items-baseline gap-2 justify-between">
+                              <span className="text-xs font-semibold text-amber-800">{c.author_name}</span>
+                              <button
+                                onClick={e => { e.stopPropagation(); handleFlagComment(c.id, true); }}
+                                className="text-xs text-amber-500 hover:text-amber-700 transition-colors"
+                                title="Remove key finding flag"
+                              >unflag</button>
+                            </div>
+                            <p className="text-sm text-amber-900 mt-0.5 leading-relaxed">{c.body}</p>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {/* All comments */}
                 {comments.map(c => (
-                  <div key={c.id} className="flex gap-2">
+                  <div key={c.id} className={`flex gap-2 group/comment ${c.is_key_finding ? 'opacity-60' : ''}`}>
                     <div className="w-6 h-6 rounded-full bg-[#D04A02] text-white text-xs flex items-center justify-center flex-shrink-0 font-medium">
                       {c.author_name.charAt(0)}
                     </div>
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-baseline gap-2">
-                        <span className="text-xs font-semibold text-gray-800">{c.author_name}</span>
-                        <span className="text-xs text-gray-400">
-                          {new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
-                        </span>
+                      <div className="flex items-baseline gap-2 justify-between">
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-xs font-semibold text-gray-800">{c.author_name}</span>
+                          <span className="text-xs text-gray-400">
+                            {new Date(c.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                          </span>
+                        </div>
+                        {!c.is_key_finding && (
+                          <button
+                            onClick={e => { e.stopPropagation(); handleFlagComment(c.id, false); }}
+                            className="opacity-0 group-hover/comment:opacity-100 text-xs text-gray-400 hover:text-amber-600 transition-all"
+                            title="Flag as key finding"
+                          >⚑ flag</button>
+                        )}
                       </div>
                       <p className="text-sm text-gray-700 mt-0.5 leading-relaxed">{c.body}</p>
                     </div>

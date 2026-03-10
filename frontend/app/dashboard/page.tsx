@@ -16,10 +16,10 @@ const NAV_LINKS = [
 ];
 
 const STATUS_CONFIG: Record<string, { label: string; dot: string; text: string }> = {
-  active:    { label: 'Active',    dot: 'bg-orange-400', text: 'text-orange-400' },
-  draft:     { label: 'Draft',     dot: 'bg-slate-400',  text: 'text-slate-400' },
-  closed:    { label: 'Closed',    dot: 'bg-emerald-400',text: 'text-emerald-400' },
-  cancelled: { label: 'Cancelled', dot: 'bg-red-400',    text: 'text-red-400' },
+  active:    { label: 'Active',    dot: 'bg-orange-500', text: 'text-orange-600' },
+  draft:     { label: 'Draft',     dot: 'bg-gray-400',   text: 'text-gray-500' },
+  closed:    { label: 'Closed',    dot: 'bg-emerald-500',text: 'text-emerald-600' },
+  cancelled: { label: 'Cancelled', dot: 'bg-red-500',    text: 'text-red-600' },
 };
 
 export default function DashboardPage() {
@@ -33,7 +33,7 @@ export default function DashboardPage() {
 
   if (authLoading || dealsLoading) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-[#0C0F1A]">
+      <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <LoadingSpinner size="lg" />
       </div>
     );
@@ -41,23 +41,22 @@ export default function DashboardPage() {
 
   if (!isAuthenticated || !deals) return null;
 
-  // Stats derived from deal pipeline
-  const activeDeals   = deals.filter(d => d.status === 'active');
-  const totalDealSize = deals.reduce((sum, d) => sum + (d.deal_size_usd || 0), 0);
-  const totalCombinedRev = deals.reduce((sum, d) => {
-    return sum + (d.acquirer?.revenue_usd || 0) + (d.target?.revenue_usd || 0);
-  }, 0);
+  const activeDeals      = deals.filter(d => d.status === 'active' || d.status === 'draft');
+  const totalDealSize    = deals.reduce((sum, d) => sum + (d.deal_size_usd || 0), 0);
+  const totalSynLow      = deals.reduce((sum, d) => sum + (d.total_value_low  || 0), 0);
+  const totalSynHigh     = deals.reduce((sum, d) => sum + (d.total_value_high || 0), 0);
+  const maxHigh          = Math.max(...deals.map(d => d.total_value_high || 0), 1);
 
   return (
-    <div className="min-h-screen bg-[#0C0F1A]">
+    <div className="min-h-screen bg-gray-50">
 
       {/* Top nav */}
-      <header className="border-b border-white/8 bg-[#0E1220]">
+      <header className="border-b border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
           <div className="flex items-center justify-between h-14">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-6 bg-orange-500 rounded-full" />
-              <span className="text-sm font-semibold text-white tracking-wide">SYNERGIES</span>
+              <div className="w-1 h-6 bg-[#D04A02] rounded-full" />
+              <span className="text-sm font-semibold text-gray-900 tracking-wide">SYNERGIES</span>
             </div>
             <nav className="flex items-center gap-1">
               {NAV_LINKS.map(link => (
@@ -66,8 +65,8 @@ export default function DashboardPage() {
                   href={link.href}
                   className={`px-4 py-2 text-sm font-medium rounded-md transition-colors ${
                     link.active
-                      ? 'text-orange-400 bg-orange-500/10'
-                      : 'text-slate-400 hover:text-white hover:bg-white/5'
+                      ? 'text-[#D04A02] bg-orange-50'
+                      : 'text-gray-500 hover:text-gray-900 hover:bg-gray-100'
                   }`}
                 >
                   {link.label}
@@ -79,15 +78,13 @@ export default function DashboardPage() {
       </header>
 
       {/* Page header */}
-      <div className="border-b border-white/8 bg-[#0E1220]">
+      <div className="border-b border-gray-200 bg-white">
         <div className="max-w-7xl mx-auto px-6 lg:px-8 py-6">
-          <p className="text-xs font-semibold text-orange-500 uppercase tracking-widest mb-1">
-            Overview
-          </p>
-          <h1 className="text-2xl font-bold text-white">
+          <p className="text-xs font-semibold text-[#D04A02] uppercase tracking-widest mb-1">Overview</p>
+          <h1 className="text-2xl font-bold text-gray-900">
             {user?.first_name ? `Welcome back, ${user.first_name}` : 'Dashboard'}
           </h1>
-          <p className="text-sm text-slate-400 mt-1">M&A synergy analysis platform</p>
+          <p className="text-sm text-gray-500 mt-1">M&A synergy analysis platform</p>
         </div>
       </div>
 
@@ -95,29 +92,31 @@ export default function DashboardPage() {
 
         {/* KPI row */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <div className="rounded-xl border border-white/8 bg-[#0E1220] p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Transactions</p>
-            <p className="text-4xl font-bold text-white tabular-nums">{deals.length}</p>
-            <p className="text-xs text-slate-500 mt-2">Total in pipeline</p>
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Transactions</p>
+            <p className="text-4xl font-bold text-gray-900 tabular-nums">{deals.length}</p>
+            <p className="text-xs text-gray-500 mt-2">{activeDeals.length} active</p>
           </div>
-          <div className="rounded-xl border border-orange-500/20 bg-orange-500/5 p-5">
-            <p className="text-xs font-semibold text-orange-500 uppercase tracking-wider mb-3">Active</p>
-            <p className="text-4xl font-bold text-white tabular-nums">{activeDeals.length}</p>
-            <p className="text-xs text-slate-500 mt-2">In progress</p>
-          </div>
-          <div className="rounded-xl border border-white/8 bg-[#0E1220] p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Total Deal Value</p>
-            <p className="text-3xl font-bold text-white font-mono tabular-nums">
+          <div className="rounded-xl border border-orange-200 bg-orange-50 p-5">
+            <p className="text-xs font-semibold text-[#D04A02] uppercase tracking-wider mb-3">Total Deal Value</p>
+            <p className="text-3xl font-bold text-gray-900 font-mono tabular-nums">
               {totalDealSize > 0 ? formatCompactNumber(totalDealSize) : '—'}
             </p>
-            <p className="text-xs text-slate-500 mt-2">Aggregate deal size</p>
+            <p className="text-xs text-gray-500 mt-2">Aggregate EV</p>
           </div>
-          <div className="rounded-xl border border-white/8 bg-[#0E1220] p-5">
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Combined Revenue</p>
-            <p className="text-3xl font-bold text-white font-mono tabular-nums">
-              {totalCombinedRev > 0 ? formatCompactNumber(totalCombinedRev) : '—'}
+          <div className="rounded-xl border border-gray-200 bg-white p-5">
+            <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Synergy Low</p>
+            <p className="text-3xl font-bold text-gray-900 font-mono tabular-nums">
+              {totalSynLow > 0 ? formatCompactNumber(totalSynLow) : '—'}
             </p>
-            <p className="text-xs text-slate-500 mt-2">Across all entities</p>
+            <p className="text-xs text-gray-500 mt-2">Portfolio floor estimate</p>
+          </div>
+          <div className="rounded-xl border border-[#D04A02]/20 bg-orange-50/50 p-5">
+            <p className="text-xs font-semibold text-[#D04A02] uppercase tracking-wider mb-3">Synergy High</p>
+            <p className="text-3xl font-bold text-gray-900 font-mono tabular-nums">
+              {totalSynHigh > 0 ? formatCompactNumber(totalSynHigh) : '—'}
+            </p>
+            <p className="text-xs text-gray-500 mt-2">Portfolio ceiling estimate</p>
           </div>
         </div>
 
@@ -125,82 +124,81 @@ export default function DashboardPage() {
         <section>
           <div className="flex items-center justify-between mb-5">
             <div className="flex items-center gap-3">
-              <div className="w-1 h-5 bg-orange-500 rounded-full" />
-              <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Deal Pipeline</h2>
+              <div className="w-1 h-5 bg-[#D04A02] rounded-full" />
+              <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Deal Pipeline</h2>
             </div>
             <button
               onClick={() => router.push('/deals')}
-              className="text-xs text-slate-500 hover:text-orange-400 transition-colors flex items-center gap-1"
+              className="text-xs text-gray-400 hover:text-[#D04A02] transition-colors flex items-center gap-1"
             >
               View all <ArrowRight className="w-3 h-3" />
             </button>
           </div>
 
           {deals.length === 0 ? (
-            <div className="border border-white/8 bg-[#111827] rounded-xl p-12 text-center">
-              <Building2 className="w-10 h-10 text-slate-600 mx-auto mb-3" />
-              <h3 className="text-base font-semibold text-white mb-1">No deals yet</h3>
-              <p className="text-slate-400 text-sm mb-5">Create your first transaction to start synergy analysis</p>
+            <div className="border border-gray-200 bg-white rounded-xl p-12 text-center">
+              <Building2 className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+              <h3 className="text-base font-semibold text-gray-900 mb-1">No deals yet</h3>
+              <p className="text-gray-500 text-sm mb-5">Create your first transaction to start synergy analysis</p>
               <button
                 onClick={() => router.push('/deals/new')}
-                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-orange-500 hover:bg-orange-600 text-white rounded-lg transition-colors"
+                className="inline-flex items-center gap-1.5 px-4 py-2 text-sm font-medium bg-[#D04A02] hover:bg-orange-700 text-white rounded-lg transition-colors"
               >
                 <Plus className="w-4 h-4" /> New Deal
               </button>
             </div>
           ) : (
-            <div className="border border-white/8 rounded-xl overflow-hidden">
-              {/* Header */}
-              <div className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_32px] gap-4 px-6 py-3 bg-[#111827] border-b border-white/8">
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Transaction</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Deal Size</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Combined Rev.</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Close Date</span>
-                <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</span>
+            <div className="border border-gray-200 rounded-xl overflow-hidden bg-white">
+              <div className="grid grid-cols-[2fr_1fr_2fr_1fr_32px] gap-4 px-6 py-3 bg-gray-50 border-b border-gray-200">
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Transaction</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Deal Size</span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider flex items-center gap-1.5">
+                  <TrendingUp className="w-3 h-3" />Synergy Opportunity
+                </span>
+                <span className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</span>
                 <span />
               </div>
-              {/* Rows */}
-              <div className="divide-y divide-white/5">
+              <div className="divide-y divide-gray-100">
                 {deals.slice(0, 5).map((deal) => {
                   const status = STATUS_CONFIG[deal.status] || STATUS_CONFIG.draft;
-                  const combinedRev = (deal.acquirer?.revenue_usd || 0) + (deal.target?.revenue_usd || 0);
+                  const synHigh = deal.total_value_high || 0;
+                  const synLow  = deal.total_value_low  || 0;
+                  const barPct  = maxHigh > 0 ? (synHigh / maxHigh) * 100 : 0;
                   return (
                     <div
                       key={deal.id}
                       onClick={() => router.push(`/deals/${deal.id}`)}
-                      className="grid grid-cols-[2fr_1fr_1fr_1fr_1fr_32px] gap-4 px-6 py-4 bg-[#0E1220] hover:bg-[#141929] transition-colors cursor-pointer group items-center"
+                      className="grid grid-cols-[2fr_1fr_2fr_1fr_32px] gap-4 px-6 py-4 hover:bg-orange-50 transition-colors cursor-pointer group items-center"
                     >
                       <div className="min-w-0">
-                        <p className="text-sm font-semibold text-white truncate group-hover:text-orange-300 transition-colors">
+                        <p className="text-sm font-semibold text-gray-900 truncate group-hover:text-[#D04A02] transition-colors">
                           {deal.name}
                         </p>
                         <div className="flex items-center gap-2 mt-1">
-                          <span className="text-xs text-slate-500 truncate">{deal.acquirer?.name}</span>
-                          <span className="text-slate-700 text-xs">→</span>
-                          <span className="text-xs text-slate-500 truncate">{deal.target?.name}</span>
+                          <span className="text-xs text-gray-500 truncate">{deal.acquirer?.name}</span>
+                          <span className="text-gray-300 text-xs flex-shrink-0">→</span>
+                          <span className="text-xs text-gray-500 truncate">{deal.target?.name}</span>
                         </div>
                       </div>
                       <div>
                         {deal.deal_size_usd ? (
-                          <span className="text-sm font-mono text-white">{formatCompactNumber(deal.deal_size_usd)}</span>
+                          <span className="text-sm font-mono text-gray-900">{formatCompactNumber(deal.deal_size_usd)}</span>
                         ) : (
-                          <span className="text-sm text-slate-600">—</span>
+                          <span className="text-sm text-gray-400">—</span>
                         )}
                       </div>
-                      <div>
-                        {combinedRev > 0 ? (
-                          <span className="text-sm font-mono text-slate-300">{formatCompactNumber(combinedRev)}</span>
+                      <div className="min-w-0">
+                        {synHigh > 0 ? (
+                          <>
+                            <p className="text-sm font-semibold text-gray-900 font-mono tabular-nums">
+                              {formatCompactNumber(synLow)}<span className="text-gray-400 font-normal text-xs mx-1">–</span>{formatCompactNumber(synHigh)}
+                            </p>
+                            <div className="h-1 bg-gray-100 rounded-full mt-1.5">
+                              <div className="h-full bg-[#D04A02] opacity-60 rounded-full" style={{ width: `${barPct}%` }} />
+                            </div>
+                          </>
                         ) : (
-                          <span className="text-sm text-slate-600">—</span>
-                        )}
-                      </div>
-                      <div>
-                        {deal.close_date ? (
-                          <span className="text-sm text-slate-300">
-                            {new Date(deal.close_date).toLocaleDateString('en-US', { year: 'numeric', month: 'short' })}
-                          </span>
-                        ) : (
-                          <span className="text-sm text-slate-600">—</span>
+                          <span className="text-sm text-gray-400">—</span>
                         )}
                       </div>
                       <div className="flex items-center gap-2">
@@ -208,7 +206,7 @@ export default function DashboardPage() {
                         <span className={`text-xs font-medium ${status.text}`}>{status.label}</span>
                       </div>
                       <div className="flex items-center justify-center">
-                        <ArrowRight className="w-3.5 h-3.5 text-slate-600 group-hover:text-orange-400 transition-colors" />
+                        <ArrowRight className="w-3.5 h-3.5 text-gray-300 group-hover:text-[#D04A02] transition-colors" />
                       </div>
                     </div>
                   );
@@ -221,44 +219,44 @@ export default function DashboardPage() {
         {/* Quick actions */}
         <section>
           <div className="flex items-center gap-3 mb-5">
-            <div className="w-1 h-5 bg-slate-700 rounded-full" />
-            <h2 className="text-xs font-semibold text-slate-400 uppercase tracking-widest">Quick Actions</h2>
+            <div className="w-1 h-5 bg-gray-300 rounded-full" />
+            <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-widest">Quick Actions</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
             <button
               onClick={() => router.push('/deals/new')}
-              className="flex items-center gap-3 p-4 rounded-xl border border-white/8 bg-[#0E1220] hover:border-orange-500/30 hover:bg-orange-500/5 transition-all text-left group"
+              className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white hover:border-orange-300 hover:bg-orange-50 transition-all text-left group"
             >
-              <div className="w-8 h-8 rounded-lg bg-orange-500/10 flex items-center justify-center flex-shrink-0">
-                <Plus className="w-4 h-4 text-orange-400" />
+              <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center flex-shrink-0">
+                <Plus className="w-4 h-4 text-[#D04A02]" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white group-hover:text-orange-300 transition-colors">New Deal</p>
-                <p className="text-xs text-slate-500">Start synergy analysis</p>
+                <p className="text-sm font-semibold text-gray-900 group-hover:text-[#D04A02] transition-colors">New Deal</p>
+                <p className="text-xs text-gray-500">Start synergy analysis</p>
               </div>
             </button>
             <button
               onClick={() => router.push('/learn')}
-              className="flex items-center gap-3 p-4 rounded-xl border border-white/8 bg-[#0E1220] hover:border-white/20 hover:bg-white/3 transition-all text-left group"
+              className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-all text-left group"
             >
-              <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                <Activity className="w-4 h-4 text-slate-400" />
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <Activity className="w-4 h-4 text-gray-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">Lever Playbooks</p>
-                <p className="text-xs text-slate-500">Methodology workspace</p>
+                <p className="text-sm font-semibold text-gray-900">Lever Playbooks</p>
+                <p className="text-xs text-gray-500">Methodology workspace</p>
               </div>
             </button>
             <button
               onClick={() => router.push('/chat')}
-              className="flex items-center gap-3 p-4 rounded-xl border border-white/8 bg-[#0E1220] hover:border-white/20 hover:bg-white/3 transition-all text-left group"
+              className="flex items-center gap-3 p-4 rounded-xl border border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50 transition-all text-left group"
             >
-              <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0">
-                <TrendingUp className="w-4 h-4 text-slate-400" />
+              <div className="w-8 h-8 rounded-lg bg-gray-100 flex items-center justify-center flex-shrink-0">
+                <TrendingUp className="w-4 h-4 text-gray-500" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-white">AI Chat</p>
-                <p className="text-xs text-slate-500">Ask about lever methodology</p>
+                <p className="text-sm font-semibold text-gray-900">AI Chat</p>
+                <p className="text-xs text-gray-500">Ask about lever methodology</p>
               </div>
             </button>
           </div>

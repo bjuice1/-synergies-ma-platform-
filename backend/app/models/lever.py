@@ -204,9 +204,18 @@ class DealLever(db.Model):
     # Baseline input (from client financial data)
     combined_baseline_usd = db.Column(db.BigInteger, nullable=True)  # Combined cost for this function
 
-    # Calculated output
+    # IQR range (P25–P75) — primary display range, more defensible than full min/max
+    benchmark_pct_p25 = db.Column(db.Float, nullable=True)
+    benchmark_pct_p75 = db.Column(db.Float, nullable=True)
+
+    # Calculated output (derived from P25/P75, not absolute min/max)
     calculated_value_low = db.Column(db.BigInteger, nullable=True)
     calculated_value_high = db.Column(db.BigInteger, nullable=True)
+
+    # Realization layer: theoretical × capture rate = what team expects to actually realize
+    realization_factor = db.Column(db.Float, nullable=True, default=0.75)
+    realizable_value_low = db.Column(db.BigInteger, nullable=True)
+    realizable_value_high = db.Column(db.BigInteger, nullable=True)
 
     # Advisor judgment
     status = db.Column(db.String(30), nullable=False, default='identified')
@@ -262,8 +271,13 @@ class DealLever(db.Model):
             'benchmark_pct_median': self.benchmark_pct_median,
             'benchmark_n': self.benchmark_n,
             'combined_baseline_usd': self.combined_baseline_usd,
+            'benchmark_pct_p25': self.benchmark_pct_p25,
+            'benchmark_pct_p75': self.benchmark_pct_p75,
             'calculated_value_low': self.calculated_value_low,
             'calculated_value_high': self.calculated_value_high,
+            'realization_factor': self.realization_factor if self.realization_factor is not None else 0.75,
+            'realizable_value_low': self.realizable_value_low,
+            'realizable_value_high': self.realizable_value_high,
             'status': self.status,
             'confidence': self.confidence,
             'advisor_notes': self.advisor_notes,
@@ -290,6 +304,7 @@ class LeverComment(db.Model):
     deal_lever_id = db.Column(db.Integer, db.ForeignKey('deal_levers.id'), nullable=False, index=True)
     user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
     body = db.Column(db.Text, nullable=False)
+    is_key_finding = db.Column(db.Boolean, nullable=False, default=False)
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
 
@@ -306,5 +321,6 @@ class LeverComment(db.Model):
                 if self.author else 'Unknown'
             ),
             'body': self.body,
+            'is_key_finding': self.is_key_finding or False,
             'created_at': self.created_at.isoformat() + 'Z',
         }

@@ -1,70 +1,117 @@
-import { openai } from '@ai-sdk/openai';
-import { streamText, tool } from 'ai';
-import { chatFunctions } from '@/lib/chat-functions';
+import { anthropic } from '@ai-sdk/anthropic';
+import { streamText, convertToModelMessages } from 'ai';
+import type { UIMessage } from 'ai';
+import type { LeverWithPlaybook, DealChatContext } from '@/lib/types';
 
-// Allow streaming responses up to 30 seconds
 export const maxDuration = 30;
 
+function fmt(n: number | null | undefined): string {
+  if (!n) return 'unknown';
+  if (n >= 1_000_000_000) return `$${(n / 1_000_000_000).toFixed(1)}B`;
+  if (n >= 1_000_000) return `$${(n / 1_000_000).toFixed(0)}M`;
+  return `$${(n / 1_000).toFixed(0)}K`;
+}
+
+function buildLeverContext(levers: LeverWithPlaybook[]): string {
+  if (!levers || levers.length === 0) return '';
+
+  return levers.map((lw) => {
+    const p = lw.playbook;
+    const lines: string[] = [`## ${lw.lever_name} (${lw.lever_type} lever)`];
+    if (p?.what_it_is) lines.push(`**What it is:** ${p.what_it_is}`);
+    if (p?.what_drives_it) lines.push(`**What drives it:** ${p.what_drives_it}`);
+    if (p?.diligence_questions?.length) {
+      lines.push('**Diligence questions:**');
+      p.diligence_questions.forEach((q) => lines.push(`- ${q}`));
+    }
+    if (p?.red_flags?.length) {
+      lines.push('**Red flags:**');
+      p.red_flags.forEach((f) => lines.push(`- ${f}`));
+    }
+    if (p?.team_notes) lines.push(`**Team notes:** ${p.team_notes}`);
+    return lines.join('\n');
+  }).join('\n\n');
+}
+
+function buildDealContext(ctx: DealChatContext): string {
+  const isOverview = ctx.lever_type === 'overview';
+  const combined = (ctx.acquirer_revenue ?? 0) + (ctx.target_revenue ?? 0);
+
+  const lines: string[] = [
+    `# Active Deal Context: ${ctx.deal_name}`,
+    `**Acquirer:** ${ctx.acquirer_name} (${fmt(ctx.acquirer_revenue)} revenue)`,
+    `**Target:** ${ctx.target_name} (${fmt(ctx.target_revenue)} revenue)`,
+    `**Combined revenue:** ${fmt(combined)}`,
+  ];
+
+  if (isOverview) {
+    lines.push(
+      '',
+      `## Total Cost Synergy Opportunity`,
+      `**Benchmark range:** ${ctx.pct_low}–${ctx.pct_high}% of combined revenue`,
+      `**Implied $ range:** ${fmt(ctx.value_low)} – ${fmt(ctx.value_high)}`,
+      `**Based on:** ${ctx.benchmark_n} comparable transactions`,
+    );
+    if (ctx.subtypes?.length) {
+      lines.push('', '**Lever-by-lever breakdown:**');
+      ctx.subtypes.forEach(st =>
+        lines.push(`- **${st.name}:** ${st.description} (benchmark median ${st.typical_pct.toFixed(1)}% of combined revenue)`)
+      );
+    }
+  } else {
+    lines.push(
+      '',
+      `## Focused Lever: ${ctx.lever_name} (${ctx.lever_type})`,
+      `**Benchmark range:** ${ctx.pct_low}–${ctx.pct_high}% of combined revenue`,
+      `**Implied $ opportunity:** ${fmt(ctx.value_low)} – ${fmt(ctx.value_high)}`,
+      `**Based on:** ${ctx.benchmark_n} comparable transactions`,
+    );
+    if (ctx.subtypes?.length) {
+      lines.push('', '**Typical sub-type breakdown:**');
+      ctx.subtypes.forEach(st => lines.push(`- ${st.name}: ~${st.typical_pct}% of ${ctx.lever_name} savings — ${st.description}`));
+    }
+    const answered = Object.entries(ctx.environment_data ?? {}).filter(([, v]) => v?.trim());
+    if (answered.length) {
+      lines.push('', '**Deal environment — analyst findings so far:**');
+      answered.forEach(([q, a]) => lines.push(`- ${q}: ${a}`));
+    } else {
+      lines.push('', '**Deal environment:** No specific data collected yet — analysis is benchmark-only.');
+    }
+  }
+
+  return lines.join('\n');
+}
+
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, leverContext, dealContext } = await req.json() as {
+    messages: UIMessage[];
+    leverContext?: LeverWithPlaybook[];
+    dealContext?: DealChatContext;
+  };
 
-  const result = await streamText({
-    model: openai('gpt-4-turbo'),
-    messages,
-    system: `You are an AI assistant for an M&A (Mergers & Acquisitions) synergies analysis platform.
+  const knowledgeBase = leverContext ? buildLeverContext(leverContext) : '';
+  const dealSection = dealContext ? buildDealContext(dealContext) : '';
 
-Your role is to help users query and analyze M&A synergies data using natural language.
+  const systemPrompt = `You are a knowledgeable M&A integration advisor helping analysts understand merger synergy methodology and scope specific deals. You have deep expertise in how synergies are identified, measured, and captured in post-merger integration.
 
-Key capabilities:
-- Search synergies by industry, status, value range, or keywords
-- Get detailed information about specific synergies
-- Analyze synergies grouped by various dimensions
-- Provide insights and summaries of synergy data
+Your role is to answer questions about the lever playbook methodology — the 6 cost levers (IT, Finance, HR, Operations, Procurement, Real Estate) and 1 revenue lever. When a deal context is provided, anchor your answers to that specific deal.
 
 Guidelines:
-- Be concise and professional
-- When showing synergy results, format them clearly with key metrics
-- Use the available tools to query the database - never make up data
-- If a query is ambiguous, ask for clarification
-- Suggest relevant follow-up questions based on the results
-- Format currency values clearly (use the provided formatted values)
+- Be concise and precise — analysts are professionals, not students
+- When a deal context is loaded, use the companies' actual names, revenues, and known environment data
+- Suggest specific next diligence steps when analysts ask about scoping
+- Cite specific lever content when answering (diligence questions, red flags)
+- Format responses clearly — use short paragraphs or bullet points as appropriate
+${dealSection ? `\n---\n${dealSection}` : ''}
+${knowledgeBase ? `\n---\n# Lever Knowledge Base\n\n${knowledgeBase}` : ''}`;
 
-When users ask vague questions like "show me synergies", ask them to be more specific:
-- Which industry? (Technology, Healthcare, Manufacturing, etc.)
-- What status? (Identified, In Progress, Realized, At Risk)
-- What value range? (Over $1M, under $10M, etc.)
-
-Always be helpful and guide users to get the most value from the data.`,
-    tools: {
-      search_synergies: tool({
-        description: chatFunctions.search_synergies.description,
-        parameters: chatFunctions.search_synergies.parameters,
-        execute: chatFunctions.search_synergies.execute,
-      }),
-      get_synergy_details: tool({
-        description: chatFunctions.get_synergy_details.description,
-        parameters: chatFunctions.get_synergy_details.parameters,
-        execute: chatFunctions.get_synergy_details.execute,
-      }),
-      analyze_synergies: tool({
-        description: chatFunctions.analyze_synergies.description,
-        parameters: chatFunctions.analyze_synergies.parameters,
-        execute: chatFunctions.analyze_synergies.execute,
-      }),
-      get_industries: tool({
-        description: chatFunctions.get_industries.description,
-        parameters: chatFunctions.get_industries.parameters,
-        execute: chatFunctions.get_industries.execute,
-      }),
-      get_functions: tool({
-        description: chatFunctions.get_functions.description,
-        parameters: chatFunctions.get_functions.parameters,
-        execute: chatFunctions.get_functions.execute,
-      }),
-    },
-    maxTokens: 1024,
-    temperature: 0.3, // Lower temperature for more consistent responses
+  const result = streamText({
+    model: anthropic('claude-haiku-4-5-20251001'),
+    messages: await convertToModelMessages(messages),
+    system: systemPrompt,
+    maxOutputTokens: 1024,
+    temperature: 0.3,
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }

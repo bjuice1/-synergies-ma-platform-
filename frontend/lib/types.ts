@@ -296,6 +296,11 @@ export interface DealLever {
   refined_pct_low?: number | null;
   refined_pct_high?: number | null;
   refinement_rationale?: string | null;
+  benchmark_pct_p25?: number | null;
+  benchmark_pct_p75?: number | null;
+  realization_factor?: number;
+  realizable_value_low?: number | null;
+  realizable_value_high?: number | null;
 }
 
 export interface LeverComment {
@@ -304,8 +309,11 @@ export interface LeverComment {
   user_id: number;
   author_name: string;
   body: string;
+  is_key_finding: boolean;
   created_at: string;
 }
+
+export type DealPerspective = 'combined' | 'acquirer' | 'target';
 
 // Context passed from a deal lever to the AI chat
 export interface DealChatContext {
@@ -331,9 +339,12 @@ export interface DealLeversResponse {
   summary: {
     total_cost_synergy_low: number;
     total_cost_synergy_high: number;
+    total_realizable_low: number;
+    total_realizable_high: number;
     combined_revenue: number;
     total_pct_low: number;
     total_pct_high: number;
     benchmark_n: number;
+    realization_factor: number;
   };
 }
