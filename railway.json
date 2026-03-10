@@ -3,7 +3,7 @@
     "builder": "DOCKERFILE"
   },
   "deploy": {
-    "releaseCommand": "python -c \"from backend.app import create_app; from backend.extensions import db; app = create_app('production'); ctx = app.app_context(); ctx.push(); db.create_all(); print('Schema ready')\" || echo 'DB init deferred - will run via railway run'",
+    "releaseCommand": "python -c \"from backend.extensions import db; from sqlalchemy import text; from backend.config import get_config; from flask import Flask; app = Flask(__name__); app.config.from_object(get_config('production')); db.init_app(app); app.app_context().push(); db.session.execute(text('SELECT 1')); print('DB connection OK')\" || echo 'DB check skipped'",
     "startCommand": "/workspace/start.sh",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 600,
