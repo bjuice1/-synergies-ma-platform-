@@ -15,8 +15,11 @@ import type {
   Deal,
   Company,
   DealLeversResponse,
+  DealLever,
   LeverPlaybook,
   LeverWithPlaybook,
+  LeverComment,
+  User,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
@@ -220,6 +223,61 @@ export const dealsApi = {
 
   getLevers: async (id: number): Promise<DealLeversResponse> => {
     const response = await api.get<DealLeversResponse>(`/deals/${id}/levers`);
+    return response.data;
+  },
+
+  updateLever: async (
+    dealId: number,
+    leverId: number,
+    data: { advisor_notes?: string; status?: DealLever['status']; confidence?: DealLever['confidence']; environment_data?: Record<string, string>; assigned_to_id?: number | null }
+  ): Promise<DealLever> => {
+    const response = await api.patch<DealLever>(`/deals/${dealId}/levers/${leverId}`, data);
+    return response.data;
+  },
+
+  getComments: async (dealId: number, leverId: number): Promise<LeverComment[]> => {
+    const response = await api.get<LeverComment[]>(`/deals/${dealId}/levers/${leverId}/comments`);
+    return response.data;
+  },
+
+  postComment: async (dealId: number, leverId: number, body: string): Promise<LeverComment> => {
+    const response = await api.post<LeverComment>(`/deals/${dealId}/levers/${leverId}/comments`, { body });
+    return response.data;
+  },
+
+  refineLever: async (dealId: number, leverId: number): Promise<DealLever> => {
+    const response = await api.post<DealLever>(`/deals/${dealId}/levers/${leverId}/refine`);
+    return response.data;
+  },
+
+  populateFromBrief: async (dealId: number): Promise<{ updated: number; levers: DealLever[] }> => {
+    const response = await api.post<{ updated: number; levers: DealLever[] }>(`/deals/${dealId}/populate-from-brief`);
+    return response.data;
+  },
+
+  exportExcel: async (dealId: number, dealName: string): Promise<void> => {
+    const response = await api.get(`/deals/${dealId}/export/excel`, { responseType: 'blob' });
+    const url = URL.createObjectURL(new Blob([response.data]));
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `${dealName.replace(/[^a-z0-9]/gi, '_')}_synergy_analysis.xlsx`;
+    a.click();
+    URL.revokeObjectURL(url);
+  },
+};
+
+// Companies API
+export const companiesApi = {
+  update: async (companyId: number, data: { revenue_usd?: number | null; employees?: number | null; name?: string }): Promise<Company> => {
+    const response = await api.patch<Company>(`/deals/companies/${companyId}`, data);
+    return response.data;
+  },
+};
+
+// Users API
+export const usersApi = {
+  getAll: async (): Promise<User[]> => {
+    const response = await api.get<User[]>('/users');
     return response.data;
   },
 };

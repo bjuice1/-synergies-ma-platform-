@@ -1,0 +1,51 @@
+flowchart LR
+    subgraph "Input"
+        BRIEF[Deal Briefing Document\nPDF / text paste]
+        APQC[APQC Benchmark Data\n7 comparable deals seeded]
+        ANALYST[Analyst Diligence Q&A\nfree-text per lever]
+    end
+
+    subgraph "Backend Processing"
+        EXTRACT[Claude Haiku\nBrief → Company fields\nJSON extraction]
+        BENCH[Benchmark Engine\nmin/median/max pcts\nper lever across N deals]
+        LEVER_CALC[Lever Calculator\nbenchmark_pct × combined_revenue\n= $ synergy range]
+        REFINE[Claude Haiku\nQ&A + benchmark range\n→ deal-specific pct]
+        EXCEL[openpyxl Export\n3-sheet workbook]
+    end
+
+    subgraph "Storage [PostgreSQL]"
+        DB_DEAL[(Deal + Companies)]
+        DB_BENCH[(BenchmarkDataPoints\nproject × lever × pct)]
+        DB_LEVER[(DealLever\nbenchmark_pct_low/high\nrefined_pct_low/high\ncalculated_value_low/high)]
+        DB_PLAY[(LeverPlaybook\ndiligence_questions\nwhat_it_is / red_flags)]
+        DB_COMMENT[(LeverComment\nthread per lever)]
+    end
+
+    subgraph "Frontend Output"
+        UI_CARD[LeverCard\nBenchmark bar + $ range\nDeal estimate ✦ when refined]
+        UI_DASH[Dashboard KPIs\nTotal synergy low/high]
+        UI_EXCEL[Excel Download\nSummary / Levers / Activities]
+        UI_CHAT[AI Chat\nPlaybook context injected]
+    end
+
+    BRIEF -->|POST /populate-from-brief| EXTRACT
+    EXTRACT -->|Update company fields| DB_DEAL
+    APQC -->|Seeded via seed_data.py| DB_BENCH
+    DB_BENCH -->|Query min/median/max| BENCH
+    BENCH -->|Create DealLevers| DB_LEVER
+    DB_DEAL -->|combined_revenue| LEVER_CALC
+    DB_LEVER --> LEVER_CALC
+    LEVER_CALC -->|Update calculated_value_low/high| DB_LEVER
+    ANALYST -->|PATCH environment_data| DB_LEVER
+    DB_LEVER -->|Q&A + benchmark bounds| REFINE
+    REFINE -->|refined_pct + rationale| DB_LEVER
+    DB_PLAY -->|Injected as system prompt| UI_CHAT
+    DB_LEVER --> UI_CARD
+    DB_LEVER --> UI_DASH
+    DB_LEVER -->|GET /export/excel| EXCEL
+    EXCEL --> UI_EXCEL
+    DB_COMMENT --> UI_CARD
+
+    style REFINE fill:#7c3aed,color:#fff
+    style EXTRACT fill:#7c3aed,color:#fff
+    style DB_LEVER fill:#d97706,color:#fff

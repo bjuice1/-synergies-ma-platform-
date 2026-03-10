@@ -1,0 +1,65 @@
+graph TB
+    subgraph "Users"
+        U1[Deal Analyst]
+        U2[Admin]
+    end
+
+    subgraph "Frontend — Railway Nixpacks [Next.js 15]"
+        FE_DASH[Dashboard /dashboard]
+        FE_DEALS[Deals Pipeline /deals]
+        FE_DEAL[Deal Detail /deals/id]
+        FE_LEARN[Lever Playbooks /learn]
+        FE_CHAT[AI Chat /chat]
+        FE_API[/api/chat — Next.js Route Handler]
+    end
+
+    subgraph "Backend — Railway Dockerfile [Flask 3.0]"
+        BE_AUTH[/api/auth — JWT Login/Refresh]
+        BE_DEALS[/api/deals — Deal CRUD + Lever Engine]
+        BE_LEARN[/api/learn — Playbook CRUD]
+        BE_SYN[/api/synergies — Legacy Activity Tracking]
+        BE_USERS[/api/users — User List]
+    end
+
+    subgraph "Data Layer [PostgreSQL — Railway]"
+        DB_DEALS[(deals + companies)]
+        DB_LEVERS[(deal_levers + synergy_levers)]
+        DB_BENCH[(benchmark_projects + benchmark_datapoints)]
+        DB_PLAY[(lever_playbooks)]
+        DB_USERS[(users)]
+        DB_COMMENTS[(lever_comments)]
+        DB_SYN[(synergies — legacy activities)]
+    end
+
+    subgraph "External [Anthropic API]"
+        AI_HAIKU[Claude Haiku\nclaude-haiku-4-5-20251001]
+    end
+
+    U1 --> FE_DASH
+    U1 --> FE_DEALS
+    U1 --> FE_DEAL
+    U1 --> FE_LEARN
+    U1 --> FE_CHAT
+    U2 --> FE_DEALS
+
+    FE_DEALS -->|axios + React Query| BE_DEALS
+    FE_DEAL -->|axios + React Query| BE_DEALS
+    FE_LEARN -->|axios + React Query| BE_LEARN
+    FE_CHAT -->|ai SDK v6 stream| FE_API
+    FE_API -->|fetch playbooks| BE_LEARN
+    FE_API -->|Anthropic SDK| AI_HAIKU
+
+    BE_DEALS -->|populate-from-brief| AI_HAIKU
+    BE_DEALS -->|refine lever estimate| AI_HAIKU
+    BE_AUTH --> DB_USERS
+    BE_DEALS --> DB_DEALS
+    BE_DEALS --> DB_LEVERS
+    BE_DEALS --> DB_BENCH
+    BE_DEALS --> DB_COMMENTS
+    BE_DEALS --> DB_SYN
+    BE_LEARN --> DB_PLAY
+    BE_USERS --> DB_USERS
+
+    style AI_HAIKU fill:#7c3aed,color:#fff
+    style FE_API fill:#0ea5e9,color:#fff
+    style DB_LEVERS fill:#d97706,color:#fff

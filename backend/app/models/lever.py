@@ -213,6 +213,15 @@ class DealLever(db.Model):
     # 'identified' | 'in_analysis' | 'validated' | 'excluded'
     confidence = db.Column(db.String(20), nullable=True)   # 'high' | 'medium' | 'low'
     advisor_notes = db.Column(db.Text, nullable=True)
+    environment_data = db.Column(db.JSON, nullable=True)   # {question: answer} diligence checklist
+
+    # AI-refined estimate (from diligence Q&A → Claude)
+    refined_pct_low = db.Column(db.Float, nullable=True)
+    refined_pct_high = db.Column(db.Float, nullable=True)
+    refinement_rationale = db.Column(db.Text, nullable=True)
+
+    # Team review
+    assigned_to_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
 
     created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
     updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -220,10 +229,18 @@ class DealLever(db.Model):
     # Relationships
     deal = db.relationship('Deal', back_populates='deal_levers')
     lever = db.relationship('SynergyLever', back_populates='deal_levers')
+    assigned_to = db.relationship('User', foreign_keys=[assigned_to_id])
     activities = db.relationship(
         'Synergy',
         back_populates='deal_lever',
         lazy='dynamic'
+    )
+    comments = db.relationship(
+        'LeverComment',
+        back_populates='deal_lever',
+        lazy='dynamic',
+        cascade='all, delete-orphan',
+        order_by='LeverComment.created_at'
     )
 
     __table_args__ = (
@@ -250,7 +267,44 @@ class DealLever(db.Model):
             'status': self.status,
             'confidence': self.confidence,
             'advisor_notes': self.advisor_notes,
+            'environment_data': self.environment_data or {},
+            'assigned_to_id': self.assigned_to_id,
+            'assigned_to_name': (
+                f"{self.assigned_to.first_name} {self.assigned_to.last_name}"
+                if self.assigned_to else None
+            ),
+            'refined_pct_low': self.refined_pct_low,
+            'refined_pct_high': self.refined_pct_high,
+            'refinement_rationale': self.refinement_rationale,
         }
         if include_activities:
             data['activities'] = [a.to_dict() for a in self.activities]
         return data
+
+
+class LeverComment(db.Model):
+    """A comment left by an analyst on a specific DealLever."""
+    __tablename__ = 'lever_comments'
+
+    id = db.Column(db.Integer, primary_key=True)
+    deal_lever_id = db.Column(db.Integer, db.ForeignKey('deal_levers.id'), nullable=False, index=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    body = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, nullable=False, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    deal_lever = db.relationship('DealLever', back_populates='comments')
+    author = db.relationship('User', foreign_keys=[user_id])
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'deal_lever_id': self.deal_lever_id,
+            'user_id': self.user_id,
+            'author_name': (
+                f"{self.author.first_name} {self.author.last_name}"
+                if self.author else 'Unknown'
+            ),
+            'body': self.body,
+            'created_at': self.created_at.isoformat() + 'Z',
+        }

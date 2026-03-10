@@ -1,0 +1,1255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Synergies — Operations Ledger</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  :root {
+    --orange: #D04A02;
+    --orange-light: #FEF3EE;
+    --orange-mid: #F97316;
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-700: #374151;
+    --gray-900: #111827;
+    --green: #059669;
+    --green-light: #ECFDF5;
+    --amber: #D97706;
+    --amber-light: #FFFBEB;
+    --red: #DC2626;
+    --red-light: #FEF2F2;
+    --blue: #0EA5E9;
+    --purple: #7C3AED;
+    --sidebar-w: 260px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 14px;
+    color: var(--gray-700);
+    background: var(--gray-50);
+    line-height: 1.6;
+  }
+
+  /* ── SIDEBAR ─────────────────────────────── */
+  #sidebar {
+    position: fixed;
+    top: 0; left: 0;
+    width: var(--sidebar-w);
+    height: 100vh;
+    background: white;
+    border-right: 1px solid var(--gray-200);
+    overflow-y: auto;
+    z-index: 100;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .sidebar-brand {
+    padding: 20px 20px 16px;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .sidebar-brand .accent { width: 3px; height: 20px; background: var(--orange); border-radius: 2px; display: inline-block; vertical-align: middle; margin-right: 8px; }
+  .sidebar-brand span { font-size: 13px; font-weight: 700; letter-spacing: 0.08em; color: var(--gray-900); text-transform: uppercase; vertical-align: middle; }
+  .sidebar-meta { font-size: 11px; color: var(--gray-400); margin-top: 4px; padding-left: 11px; }
+
+  .sidebar-nav { padding: 12px 0; flex: 1; }
+  .nav-section { padding: 6px 20px 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gray-400); }
+  .nav-link {
+    display: block; padding: 7px 20px;
+    font-size: 13px; color: var(--gray-500);
+    text-decoration: none; border-left: 2px solid transparent;
+    transition: all 0.1s;
+  }
+  .nav-link:hover { color: var(--orange); background: var(--orange-light); border-left-color: var(--orange); }
+  .nav-link.active { color: var(--orange); background: var(--orange-light); border-left-color: var(--orange); font-weight: 600; }
+
+  /* ── MAIN CONTENT ─────────────────────────── */
+  #main {
+    margin-left: var(--sidebar-w);
+    min-height: 100vh;
+  }
+
+  .page-header {
+    background: white;
+    border-bottom: 1px solid var(--gray-200);
+    padding: 40px 48px 32px;
+  }
+  .page-header .eyebrow { font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.12em; color: var(--orange); margin-bottom: 6px; }
+  .page-header h1 { font-size: 28px; font-weight: 800; color: var(--gray-900); }
+  .page-header .subtitle { font-size: 14px; color: var(--gray-500); margin-top: 4px; }
+
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 1px;
+    background: var(--gray-200);
+    border-top: 1px solid var(--gray-200);
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .kpi-cell {
+    background: white;
+    padding: 16px 24px;
+  }
+  .kpi-cell .label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.08em; color: var(--gray-400); margin-bottom: 4px; }
+  .kpi-cell .value { font-size: 20px; font-weight: 800; color: var(--gray-900); font-variant-numeric: tabular-nums; }
+  .kpi-cell .sub { font-size: 11px; color: var(--gray-400); margin-top: 2px; }
+
+  /* ── SECTIONS ─────────────────────────────── */
+  .section {
+    padding: 40px 48px;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  .section:last-child { border-bottom: none; }
+
+  .section-header {
+    display: flex; align-items: center; gap: 10px;
+    margin-bottom: 24px;
+  }
+  .section-accent { width: 3px; height: 20px; background: var(--orange); border-radius: 2px; flex-shrink: 0; }
+  .section-header h2 { font-size: 18px; font-weight: 700; color: var(--gray-900); }
+  .section-header .badge {
+    font-size: 10px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em;
+    padding: 2px 8px; border-radius: 20px; background: var(--gray-100); color: var(--gray-500);
+  }
+
+  /* ── CONTENT BLOCKS ───────────────────────── */
+  .prose h3 { font-size: 15px; font-weight: 700; color: var(--gray-900); margin: 24px 0 10px; }
+  .prose h3:first-child { margin-top: 0; }
+  .prose h4 { font-size: 13px; font-weight: 600; color: var(--gray-700); margin: 16px 0 8px; }
+  .prose p { margin-bottom: 12px; }
+  .prose ul { padding-left: 20px; margin-bottom: 12px; }
+  .prose li { margin-bottom: 4px; }
+  .prose strong { font-weight: 600; color: var(--gray-900); }
+  .prose code {
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    background: var(--gray-100);
+    padding: 1px 5px;
+    border-radius: 3px;
+    color: var(--orange);
+  }
+  .prose pre {
+    background: #1E1E2E;
+    color: #CDD6F4;
+    border-radius: 8px;
+    padding: 16px 20px;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    overflow-x: auto;
+    margin: 12px 0;
+    border: 1px solid #313244;
+  }
+  .prose pre code { background: none; padding: 0; color: inherit; font-size: 12px; }
+
+  /* ── TABLES ───────────────────────────────── */
+  .table-wrap { overflow-x: auto; margin: 16px 0; border-radius: 8px; border: 1px solid var(--gray-200); }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; }
+  thead tr { background: var(--gray-50); }
+  th {
+    padding: 10px 14px;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--gray-500); text-align: left;
+    border-bottom: 1px solid var(--gray-200);
+  }
+  td { padding: 10px 14px; border-bottom: 1px solid var(--gray-100); vertical-align: top; }
+  tr:last-child td { border-bottom: none; }
+  tbody tr:hover { background: var(--gray-50); }
+  td code { font-size: 11px; }
+
+  /* ── CALLOUT CARDS ────────────────────────── */
+  .card-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 16px 0; }
+  .card {
+    background: white; border: 1px solid var(--gray-200); border-radius: 10px;
+    padding: 16px 20px;
+  }
+  .card-title { font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-500); margin-bottom: 8px; }
+  .card p { font-size: 13px; }
+
+  .alert {
+    border-radius: 8px; padding: 12px 16px; margin: 12px 0;
+    font-size: 13px; display: flex; gap: 10px; align-items: flex-start;
+  }
+  .alert .icon { flex-shrink: 0; font-size: 15px; margin-top: 1px; }
+  .alert-warn { background: var(--amber-light); border: 1px solid #FDE68A; color: #92400E; }
+  .alert-good { background: var(--green-light); border: 1px solid #A7F3D0; color: #065F46; }
+  .alert-bad  { background: var(--red-light);   border: 1px solid #FECACA; color: #991B1B; }
+  .alert-info { background: #EFF6FF; border: 1px solid #BFDBFE; color: #1E40AF; }
+
+  /* ── MERMAID ──────────────────────────────── */
+  .diagram-wrap {
+    background: white; border: 1px solid var(--gray-200); border-radius: 10px;
+    padding: 24px; margin: 16px 0; overflow-x: auto;
+  }
+  .diagram-label { font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: 0.06em; color: var(--gray-400); margin-bottom: 16px; }
+  .mermaid { font-size: 13px; }
+
+  /* ── STATUS PILLS ─────────────────────────── */
+  .pill {
+    display: inline-block; padding: 2px 8px; border-radius: 20px;
+    font-size: 11px; font-weight: 600;
+  }
+  .pill-red    { background: #FEE2E2; color: #991B1B; }
+  .pill-amber  { background: #FEF3C7; color: #92400E; }
+  .pill-green  { background: #D1FAE5; color: #065F46; }
+  .pill-blue   { background: #DBEAFE; color: #1E40AF; }
+  .pill-gray   { background: var(--gray-100); color: var(--gray-500); }
+
+  /* ── PIPELINE VIZ ─────────────────────────── */
+  .pipeline {
+    display: flex; align-items: center; gap: 0;
+    overflow-x: auto; padding: 16px 0; margin: 16px 0;
+  }
+  .pipe-step {
+    flex-shrink: 0;
+    background: white; border: 1px solid var(--gray-200); border-radius: 8px;
+    padding: 12px 16px; min-width: 140px; text-align: center;
+  }
+  .pipe-step .step-icon { font-size: 20px; margin-bottom: 4px; }
+  .pipe-step .step-label { font-size: 12px; font-weight: 600; color: var(--gray-900); }
+  .pipe-step .step-sub { font-size: 10px; color: var(--gray-400); margin-top: 2px; }
+  .pipe-step.ai-step { border-color: #C4B5FD; background: #F5F3FF; }
+  .pipe-step.db-step { border-color: #FED7AA; background: var(--orange-light); }
+  .pipe-arrow { font-size: 18px; color: var(--gray-300); padding: 0 6px; flex-shrink: 0; }
+
+  /* ── ENDPOINT LIST ────────────────────────── */
+  .endpoint-row {
+    display: flex; align-items: baseline; gap: 10px;
+    padding: 8px 0; border-bottom: 1px solid var(--gray-100);
+  }
+  .endpoint-row:last-child { border-bottom: none; }
+  .method {
+    font-size: 10px; font-weight: 800; letter-spacing: 0.04em;
+    min-width: 46px; text-align: center; padding: 2px 6px; border-radius: 4px;
+  }
+  .method-get    { background: #DBEAFE; color: #1D4ED8; }
+  .method-post   { background: #D1FAE5; color: #065F46; }
+  .method-put    { background: #FEF3C7; color: #92400E; }
+  .method-patch  { background: #FDF4FF; color: #7E22CE; }
+  .method-delete { background: #FEE2E2; color: #991B1B; }
+  .endpoint-path { font-family: 'SF Mono', monospace; font-size: 12px; color: var(--gray-700); flex: 1; }
+  .endpoint-desc { font-size: 12px; color: var(--gray-400); }
+  .endpoint-auth { font-size: 10px; padding: 1px 6px; border-radius: 10px; background: var(--gray-100); color: var(--gray-400); }
+
+  /* ── FILE TREE ────────────────────────────── */
+  .filetree {
+    background: #1E1E2E; color: #CDD6F4; border-radius: 8px;
+    padding: 16px 20px; font-family: 'SF Mono', 'Fira Code', monospace;
+    font-size: 12px; line-height: 1.8; overflow-x: auto;
+    border: 1px solid #313244; margin: 12px 0;
+  }
+  .filetree .dir { color: #89B4FA; }
+  .filetree .critical { color: #F38BA8; }
+  .filetree .high { color: #FAB387; }
+  .filetree .comment { color: #6C7086; }
+
+  /* ── HEALTH BARS ──────────────────────────── */
+  .health-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; margin: 16px 0; }
+  .health-card { background: white; border: 1px solid var(--gray-200); border-radius: 10px; padding: 16px 20px; }
+  .health-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .health-name { font-size: 13px; font-weight: 700; color: var(--gray-900); }
+  .health-score { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .health-bar-wrap { background: var(--gray-100); border-radius: 4px; height: 6px; margin-bottom: 8px; }
+  .health-bar { height: 6px; border-radius: 4px; }
+  .health-issues { font-size: 11px; color: var(--gray-400); }
+
+  /* ── TECH DEBT TABLE ──────────────────────── */
+  .debt-row td:first-child { font-weight: 600; color: var(--gray-900); }
+
+  /* ── TOC progress ──────────────────────────── */
+  .progress-bar {
+    position: fixed; top: 0; left: 0; right: 0; height: 2px;
+    background: var(--gray-100); z-index: 200;
+  }
+  .progress-fill { height: 100%; background: var(--orange); width: 0%; transition: width 0.1s; }
+
+  /* ── PRINT ────────────────────────────────── */
+  @media print {
+    #sidebar { display: none; }
+    #main { margin-left: 0; }
+    .progress-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<!-- SIDEBAR -->
+<nav id="sidebar">
+  <div class="sidebar-brand">
+    <span class="accent"></span><span>Synergies</span>
+    <div class="sidebar-meta">Operations Ledger · 2026-03-09</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-section">Overview</div>
+    <a href="#overview" class="nav-link active">System Overview</a>
+    <a href="#platform" class="nav-link">Platform Summary</a>
+
+    <div class="nav-section">Architecture</div>
+    <a href="#arch-diagram" class="nav-link">System Diagram</a>
+    <a href="#arch-components" class="nav-link">Components</a>
+    <a href="#arch-decisions" class="nav-link">Locked Decisions</a>
+    <a href="#arch-files" class="nav-link">Directory Structure</a>
+
+    <div class="nav-section">Data Flow</div>
+    <a href="#data-pipeline" class="nav-link">Core Pipeline</a>
+    <a href="#data-diagram" class="nav-link">Flow Diagram</a>
+    <a href="#data-sources" class="nav-link">Data Sources</a>
+    <a href="#data-transforms" class="nav-link">Transformations</a>
+
+    <div class="nav-section">API Inventory</div>
+    <a href="#api-auth-detail" class="nav-link">Authentication</a>
+    <a href="#api-deals" class="nav-link">Deals Endpoints</a>
+    <a href="#api-learn" class="nav-link">Learn / Playbooks</a>
+    <a href="#api-legacy" class="nav-link">Legacy Endpoints</a>
+    <a href="#api-external" class="nav-link">External APIs</a>
+
+    <div class="nav-section">Codebase</div>
+    <a href="#code-stack" class="nav-link">Tech Stack</a>
+    <a href="#code-schema" class="nav-link">Database Schema</a>
+    <a href="#code-patterns" class="nav-link">Coding Patterns</a>
+    <a href="#code-debt" class="nav-link">Technical Debt</a>
+
+    <div class="nav-section">Deployment</div>
+    <a href="#deploy-envs" class="nav-link">Environments</a>
+    <a href="#deploy-commands" class="nav-link">Deploy Commands</a>
+    <a href="#deploy-env-vars" class="nav-link">Env Variables</a>
+    <a href="#deploy-schema" class="nav-link">Schema Migrations</a>
+    <a href="#deploy-issues" class="nav-link">Known Issues</a>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div id="main">
+
+  <!-- PAGE HEADER -->
+  <div class="page-header">
+    <div class="eyebrow">Internal Documentation</div>
+    <h1>Operations Ledger</h1>
+    <div class="subtitle">Architecture · Data Flow · API Inventory · Codebase · Deployment — generated 2026-03-09</div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row">
+    <div class="kpi-cell">
+      <div class="label">Backend</div>
+      <div class="value">Flask 3.0</div>
+      <div class="sub">Python 3.11 · Railway</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="label">Frontend</div>
+      <div class="value">Next.js 15</div>
+      <div class="sub">React 18 · App Router</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="label">Database</div>
+      <div class="value">PostgreSQL</div>
+      <div class="sub">Railway managed</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="label">AI Model</div>
+      <div class="value">Haiku 4.5</div>
+      <div class="sub">claude-haiku-4-5-20251001</div>
+    </div>
+    <div class="kpi-cell">
+      <div class="label">API Endpoints</div>
+      <div class="value">34</div>
+      <div class="sub">33 backend · 1 frontend</div>
+    </div>
+  </div>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: SYSTEM OVERVIEW                      -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="overview">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>System Overview</h2>
+      <span class="badge">Architecture</span>
+    </div>
+
+    <div class="prose">
+      <p>Synergies is an M&amp;A synergy analysis SaaS platform for deal teams. Analysts input deals, extract company data from briefing documents via Claude, benchmark the deal against comparable transactions (APQC dataset), and track lever-level value capture through a structured diligence workflow.</p>
+    </div>
+
+    <div id="platform" style="margin-top:24px;">
+      <div class="health-grid">
+        <div class="health-card">
+          <div class="health-header">
+            <span class="health-name">Scale Readiness</span>
+            <span class="health-score" style="color:var(--amber)">6/10</span>
+          </div>
+          <div class="health-bar-wrap"><div class="health-bar" style="width:60%;background:var(--amber)"></div></div>
+          <div class="health-issues">✅ Works for 2–10 analysts, &lt;50 deals &nbsp;·&nbsp; ⚠️ Needs work above 100 concurrent users</div>
+        </div>
+        <div class="health-card">
+          <div class="health-header">
+            <span class="health-name">Tech Debt</span>
+            <span class="health-score" style="color:var(--amber)">5/10</span>
+          </div>
+          <div class="health-bar-wrap"><div class="health-bar" style="width:50%;background:var(--amber)"></div></div>
+          <div class="health-issues">🟠 Fake benchmark data (primary risk) &nbsp;·&nbsp; 🟡 Manual schema migrations</div>
+        </div>
+        <div class="health-card">
+          <div class="health-header">
+            <span class="health-name">Code Complexity</span>
+            <span class="health-score" style="color:var(--green)">6/10</span>
+          </div>
+          <div class="health-bar-wrap"><div class="health-bar" style="width:60%;background:var(--green)"></div></div>
+          <div class="health-issues">🟢 Clean Flask/React patterns &nbsp;·&nbsp; 🟡 Benchmark data model non-trivial</div>
+        </div>
+        <div class="health-card">
+          <div class="health-header">
+            <span class="health-name">Security</span>
+            <span class="health-score" style="color:var(--green)">7/10</span>
+          </div>
+          <div class="health-bar-wrap"><div class="health-bar" style="width:70%;background:var(--green)"></div></div>
+          <div class="health-issues">🟢 JWT gated, role-checked &nbsp;·&nbsp; 🟡 /api/learn is intentionally public</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: ARCHITECTURE DIAGRAM                 -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="arch-diagram">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>System Architecture Diagram</h2>
+    </div>
+    <div class="diagram-wrap">
+      <div class="diagram-label">System Architecture — Frontend → Backend → Data Layer → External</div>
+      <div class="mermaid">
+graph TB
+    subgraph Users["👤 Users"]
+        U1[Deal Analyst]
+        U2[Admin]
+    end
+    subgraph FE["Frontend — Railway Nixpacks · Next.js 15"]
+        FE_DASH["/dashboard"]
+        FE_DEALS["/deals"]
+        FE_DEAL["/deals/id"]
+        FE_LEARN["/learn"]
+        FE_CHAT["/chat"]
+        FE_API["/api/chat — Route Handler"]
+    end
+    subgraph BE["Backend — Railway Dockerfile · Flask 3.0"]
+        BE_AUTH["/api/auth"]
+        BE_DEALS["/api/deals — Lever Engine"]
+        BE_LEARN["/api/learn — PUBLIC"]
+        BE_USERS["/api/users"]
+    end
+    subgraph DB["Data Layer · PostgreSQL Railway"]
+        DB_DEALS[("deals + companies")]
+        DB_LEVERS[("deal_levers ⭐")]
+        DB_BENCH[("benchmark_datapoints")]
+        DB_PLAY[("lever_playbooks")]
+        DB_USERS2[("users")]
+        DB_COMMENTS[("lever_comments")]
+    end
+    subgraph EXT["External · Anthropic"]
+        AI[Claude Haiku]
+    end
+    U1 --> FE_DASH & FE_DEALS & FE_DEAL & FE_LEARN & FE_CHAT
+    FE_DEALS & FE_DEAL -->|axios + React Query| BE_DEALS
+    FE_LEARN -->|axios| BE_LEARN
+    FE_CHAT -->|ai SDK v6 stream| FE_API
+    FE_API -->|GET /api/learn| BE_LEARN
+    FE_API -->|Anthropic SDK| AI
+    BE_DEALS -->|populate-from-brief / refine| AI
+    BE_DEALS --> DB_DEALS & DB_LEVERS & DB_BENCH & DB_COMMENTS
+    BE_LEARN --> DB_PLAY
+    BE_AUTH --> DB_USERS2
+    BE_USERS --> DB_USERS2
+    style AI fill:#7c3aed,color:#fff
+    style FE_API fill:#0ea5e9,color:#fff
+    style DB_LEVERS fill:#d97706,color:#fff
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: COMPONENTS                           -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="arch-components">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Components</h2>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Frontend — Next.js 15</div>
+        <p><strong>URL:</strong> <a href="https://frontend-production-e530.up.railway.app" target="_blank">frontend-production-e530.up.railway.app</a></p>
+        <p><strong>Builder:</strong> Railway Nixpacks · <code>npm start</code></p>
+        <p><strong>State:</strong> React Query (server) + useState (UI)</p>
+        <p><strong>HTTP:</strong> axios via <code>frontend/lib/api.ts</code> with JWT interceptor</p>
+        <p><strong>AI:</strong> @ai-sdk/react v6 streaming chat via Next.js route handler</p>
+        <p><strong>Auth:</strong> JWT in localStorage; 401 → redirect to /login</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Backend — Flask 3.0</div>
+        <p><strong>URL:</strong> <a href="https://backend-production-b4cc.up.railway.app" target="_blank">backend-production-b4cc.up.railway.app</a></p>
+        <p><strong>Builder:</strong> Railway Dockerfile · Gunicorn via start.sh</p>
+        <p><strong>Entry:</strong> <code>backend/app/__init__.py → create_app()</code></p>
+        <p><strong>Auth:</strong> Flask-JWT-Extended; identity = <code>str(user.id)</code></p>
+        <p><strong>Critical:</strong> ALL imports use <code>backend.app.*</code> — never <code>app.*</code></p>
+        <p><strong>Critical:</strong> All SQLAlchemy models imported in __init__.py model block</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Database — PostgreSQL</div>
+        <p><strong>Host:</strong> Railway managed</p>
+        <p><strong>TCP Proxy:</strong> <code>maglev.proxy.rlwy.net:47787</code></p>
+        <p><strong>ORM:</strong> SQLAlchemy 2.0 + Flask-SQLAlchemy</p>
+        <p><strong>Migrations:</strong> Manual <code>ALTER TABLE</code> via psql — <code>db.create_all()</code> only handles new tables</p>
+      </div>
+      <div class="card">
+        <div class="card-title">External — Anthropic Claude Haiku</div>
+        <p><strong>Model:</strong> claude-haiku-4-5-20251001</p>
+        <p><strong>Backend:</strong> populate-from-brief + lever refinement</p>
+        <p><strong>Frontend:</strong> /api/chat knowledge assistant</p>
+        <div class="alert alert-warn" style="margin-top:8px;">
+          <span class="icon">⚠️</span>
+          <span>ANTHROPIC_API_KEY must be set on <strong>both</strong> Railway services independently</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: LOCKED DECISIONS                     -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="arch-decisions">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Architectural Decisions (Locked In)</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Decision</th><th>What</th><th>Why</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Lever-first data model</strong></td><td><code>DealLever</code> is primary output, not Synergy activities</td><td>Benchmark-grounded estimates before advisory decomposition</td></tr>
+          <tr><td><strong>% of combined revenue</strong></td><td>All synergy = <code>pct × combined_revenue</code></td><td>No cost baseline needed; consistent across deals</td></tr>
+          <tr><td><strong>Context injection (not tools)</strong></td><td>Playbook text in system prompt</td><td>Simpler, faster for knowledge assistant use case</td></tr>
+          <tr><td><strong>Sync AI calls</strong></td><td>No background queue</td><td>~2s acceptable now; async queue is future work</td></tr>
+          <tr><td><strong>Rule-based lever auto-gen</strong></td><td><code>LEVER_ACTIVITY_TEMPLATES</code> dict (5 rules)</td><td>Fast, debuggable; LLM upgrade planned later</td></tr>
+          <tr><td><strong>GET /api/learn is public</strong></td><td>No auth on playbook read endpoints</td><td>Chatbot fetches playbook context without JWT</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: DIRECTORY STRUCTURE                  -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="arch-files">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Directory Structure</h2>
+    </div>
+    <div class="filetree">
+<span class="dir">/Users/JB/Documents/Synergies/</span>
+├── <span class="dir">backend/</span>
+│   ├── <span class="dir">app/</span>
+│   │   ├── <span class="critical">__init__.py</span>          <span class="comment"># 🔴 create_app() factory — blueprint reg + model imports</span>
+│   │   ├── <span class="dir">models/</span>              <span class="comment"># Canonical SQLAlchemy models (use these)</span>
+│   │   │   ├── <span class="critical">lever.py</span>         <span class="comment"># 🔴 SynergyLever, DealLever, BenchmarkProject, LeverComment</span>
+│   │   │   ├── deal.py, company.py, user.py, synergy.py, playbook.py
+│   │   └── extensions.py        <span class="comment"># db, jwt singletons</span>
+│   ├── <span class="dir">routes/</span>              <span class="comment"># Flask blueprints (url_prefix=/api/*)</span>
+│   │   ├── <span class="critical">deals_routes.py</span>      <span class="comment"># 🔴 Deal CRUD, lever engine, AI endpoints, Excel export</span>
+│   │   ├── <span class="high">auth_routes.py</span>       <span class="comment"># 🟠 JWT login/refresh — identity must be string</span>
+│   │   ├── <span class="high">learn_routes.py</span>      <span class="comment"># 🟠 Playbook CRUD (GET is PUBLIC)</span>
+│   │   ├── users_routes.py, synergies_routes.py, industries_routes.py
+│   └── <span class="dir">utils/</span>
+│       └── <span class="high">auth_decorators.py</span>   <span class="comment"># 🟠 @require_role('analyst', 'admin')</span>
+├── <span class="dir">frontend/</span>
+│   ├── <span class="dir">app/</span>
+│   │   ├── <span class="high">api/chat/route.ts</span>    <span class="comment"># 🟠 Streaming chat — ai SDK v6 — calls Anthropic</span>
+│   │   ├── dashboard, deals/[id], deals/new, learn, chat, login pages
+│   ├── <span class="dir">components/</span>
+│   │   ├── <span class="high">levers/LeverCard.tsx</span> <span class="comment"># 🟠 Core UI: benchmark, Q&A, refine, comments, assignment</span>
+│   │   └── deals/DealBriefExtractor.tsx
+│   └── <span class="dir">lib/</span>
+│       ├── <span class="high">api.ts</span>               <span class="comment"># 🟠 All axios calls + JWT interceptor</span>
+│       ├── types.ts, leverSubtypes.ts
+├── <span class="critical">requirements.txt</span>         <span class="comment"># 🔴 ROOT — used by Dockerfile (NOT backend/requirements.txt)</span>
+├── <span class="critical">Dockerfile</span>               <span class="comment"># 🔴 Non-root user 'synergies'; CMD calls start.sh</span>
+├── <span class="critical">start.sh</span>                 <span class="comment"># 🔴 Gunicorn with $PORT expansion (shell form required)</span>
+└── railway.json             <span class="comment"># releaseCommand + healthcheck config</span>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: DATA PIPELINE                        -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="data-pipeline">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Core Data Pipeline</h2>
+    </div>
+    <div class="pipeline">
+      <div class="pipe-step">
+        <div class="step-icon">📄</div>
+        <div class="step-label">Deal Brief</div>
+        <div class="step-sub">Text paste / PDF</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step ai-step">
+        <div class="step-icon">🤖</div>
+        <div class="step-label">Claude Extract</div>
+        <div class="step-sub">Company fields JSON</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step db-step">
+        <div class="step-icon">🏢</div>
+        <div class="step-label">Companies</div>
+        <div class="step-sub">revenue, employees</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">📊</div>
+        <div class="step-label">Benchmark</div>
+        <div class="step-sub">min/median/max pct</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step db-step">
+        <div class="step-icon">⭐</div>
+        <div class="step-label">DealLever</div>
+        <div class="step-sub">$ range (pct × rev)</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">✍️</div>
+        <div class="step-label">Diligence Q&A</div>
+        <div class="step-sub">analyst fills answers</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step ai-step">
+        <div class="step-icon">✦</div>
+        <div class="step-label">Refine Estimate</div>
+        <div class="step-sub">deal-specific pct</div>
+      </div>
+      <div class="pipe-arrow">→</div>
+      <div class="pipe-step">
+        <div class="step-icon">📥</div>
+        <div class="step-label">Excel Export</div>
+        <div class="step-sub">3-sheet deliverable</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA FLOW DIAGRAM -->
+  <section class="section" id="data-diagram">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Data Flow Diagram</h2>
+    </div>
+    <div class="diagram-wrap">
+      <div class="diagram-label">Input → Processing → Storage → Output</div>
+      <div class="mermaid">
+flowchart LR
+    subgraph Input["Input"]
+        BRIEF["📄 Deal Brief\ntext paste"]
+        APQC["📊 APQC Benchmarks\n7 comparable deals"]
+        ANALYST["✍️ Diligence Q&A\nanalyst free-text"]
+    end
+    subgraph Processing["Backend Processing"]
+        EXTRACT["🤖 Claude Haiku\nBrief → Company fields"]
+        BENCH["Benchmark Engine\nmin / median / max pct"]
+        CALC["Lever Calculator\npct × combined_revenue"]
+        REFINE["🤖 Claude Haiku\nQ&A → refined pct"]
+        EXCEL["openpyxl Export\n3-sheet workbook"]
+    end
+    subgraph Storage["PostgreSQL"]
+        DB_DEAL[("deals + companies")]
+        DB_LEVER[("deal_levers ⭐\nbenchmark_pct\nrefined_pct\ncalculated_value")]
+        DB_BENCH[("benchmark_datapoints")]
+        DB_PLAY[("lever_playbooks")]
+    end
+    subgraph Output["Frontend Output"]
+        UI_CARD["LeverCard\nbenchmark bar + $ range\nDeal estimate ✦"]
+        UI_DASH["Dashboard KPIs\ntotal synergy range"]
+        UI_XLS["Excel Download"]
+        UI_CHAT["AI Chat\nplaybook context"]
+    end
+    BRIEF -->|populate-from-brief| EXTRACT
+    EXTRACT --> DB_DEAL
+    APQC --> DB_BENCH
+    DB_BENCH -->|min/max/median| BENCH
+    BENCH --> DB_LEVER
+    DB_DEAL -->|combined_revenue| CALC
+    DB_LEVER --> CALC --> DB_LEVER
+    ANALYST -->|PATCH environment_data| DB_LEVER
+    DB_LEVER -->|Q&A + bounds| REFINE --> DB_LEVER
+    DB_PLAY -->|system prompt| UI_CHAT
+    DB_LEVER --> UI_CARD & UI_DASH & EXCEL
+    EXCEL --> UI_XLS
+    style REFINE fill:#7c3aed,color:#fff
+    style EXTRACT fill:#7c3aed,color:#fff
+    style DB_LEVER fill:#d97706,color:#fff
+      </div>
+    </div>
+  </section>
+
+  <!-- DATA SOURCES -->
+  <section class="section" id="data-sources">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Data Sources</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Source</th><th>Storage</th><th>Status</th><th>Notes</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><strong>Deal Briefing Document</strong></td>
+            <td><code>deals.deal_briefing_document</code> TEXT</td>
+            <td><span class="pill pill-green">Live</span></td>
+            <td>Claude extracts 10+ fields; null-safe, never overwrites analyst data</td>
+          </tr>
+          <tr>
+            <td><strong>APQC Benchmark Dataset</strong></td>
+            <td><code>benchmark_projects</code> (7) + <code>benchmark_datapoints</code> (~49)</td>
+            <td><span class="pill pill-amber">⚠️ Synthetic</span></td>
+            <td>7 fake comparable deals from seed_data.py — real APQC data NOT yet imported</td>
+          </tr>
+          <tr>
+            <td><strong>Analyst Diligence Q&A</strong></td>
+            <td><code>deal_levers.environment_data</code> JSONB</td>
+            <td><span class="pill pill-green">Live</span></td>
+            <td>Autosave 1.5s debounce; pre-populated from company fields + brief extraction</td>
+          </tr>
+          <tr>
+            <td><strong>Anthropic Claude Haiku</strong></td>
+            <td>External API — no local storage</td>
+            <td><span class="pill pill-green">Live</span></td>
+            <td>~$0.002/brief, ~$0.001/refine. No timeout or circuit breaker configured.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-bad">
+      <span class="icon">🟠</span>
+      <strong>Product Risk:</strong> All 7 benchmark deals are synthetic. Every $ estimate shown to users is derived from fabricated comparables. Importing real APQC data is the single highest-value outstanding task.
+    </div>
+  </section>
+
+  <!-- TRANSFORMATIONS -->
+  <section class="section" id="data-transforms">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Transformations</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Transform</th><th>Function</th><th>Duration</th><th>Failure Mode</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Brief extraction</strong></td><td><code>populate_from_brief()</code></td><td>~2s</td><td>Regex JSON fallback; field-level try/except</td></tr>
+          <tr><td><strong>Lever seeding</strong></td><td><code>seed_deal_levers()</code></td><td>&lt;100ms</td><td>min/max on empty set → null pcts</td></tr>
+          <tr><td><strong>$ calculation</strong></td><td>inline in seeding</td><td>&lt;1ms</td><td>combined_rev=0 → null values</td></tr>
+          <tr><td><strong>AI refinement</strong></td><td><code>refine_lever_estimate()</code></td><td>~2s</td><td>JSON parse regex fallback</td></tr>
+          <tr><td><strong>Excel export</strong></td><td><code>export_excel()</code></td><td>&lt;500ms</td><td>benchmark_pct None guard required (fixed)</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: API AUTH                             -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="api-auth-detail">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Authentication</h2>
+      <span class="badge">API</span>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Method</div>
+        <p><strong>JWT</strong> (Flask-JWT-Extended)</p>
+        <p><strong>Login:</strong> <code>POST /api/auth/login</code> → access_token + refresh_token</p>
+        <p><strong>Expiry:</strong> Access 1 day · Refresh 30 days</p>
+        <p><strong>Storage:</strong> Frontend localStorage</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Identity Handling</div>
+        <p>Identity stored as <code>str(user.id)</code> in JWT sub</p>
+        <p>Decoded with <code>int(get_jwt_identity())</code></p>
+        <p>Guard: <code>@require_role('analyst', 'admin')</code></p>
+        <div class="alert alert-info" style="margin-top:8px;">
+          <span class="icon">ℹ️</span>
+          <span><code>GET /api/learn</code> and <code>GET /api/learn/&lt;id&gt;</code> are <strong>intentionally public</strong> — chatbot reads playbooks without JWT</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DEALS ENDPOINTS -->
+  <section class="section" id="api-deals">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Deals Endpoints</h2>
+    </div>
+    <div class="prose">
+      <p>All at <code>/api/deals</code> — <code>backend/routes/deals_routes.py</code></p>
+    </div>
+    <div style="margin-top:12px;">
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/deals</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">List all deals; optional status/acquirer/target filters</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/deals</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Create deal with acquirer + target company objects</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/deals/&lt;id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Get deal with companies, synergies, lever summary</span></div>
+      <div class="endpoint-row"><span class="method method-put">PUT</span><span class="endpoint-path">/deals/&lt;id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Update deal fields</span></div>
+      <div class="endpoint-row"><span class="method method-delete">DELETE</span><span class="endpoint-path">/deals/&lt;id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Delete deal</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/deals/&lt;id&gt;/levers</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">All DealLevers with activities, benchmark data, summary stats</span></div>
+      <div class="endpoint-row"><span class="method method-patch">PATCH</span><span class="endpoint-path">/deals/&lt;id&gt;/levers/&lt;lever_id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Update lever: status, confidence, notes, environment_data, assigned_to_id</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/deals/&lt;id&gt;/levers/&lt;lever_id&gt;/comments</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">List comments on a lever</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/deals/&lt;id&gt;/levers/&lt;lever_id&gt;/comments</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Post comment on a lever</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/deals/&lt;id&gt;/levers/&lt;lever_id&gt;/refine</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">AI estimate refinement from diligence Q&A → refined_pct + rationale</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/deals/&lt;id&gt;/populate-from-brief</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Extract company fields from deal briefing doc via Claude</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/deals/&lt;id&gt;/generate-synergies</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Rule-based synergy activity generation from templates</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/deals/&lt;id&gt;/export/excel</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Download 3-sheet Excel workbook (Summary / Levers / Activities)</span></div>
+      <div class="endpoint-row"><span class="method method-patch">PATCH</span><span class="endpoint-path">/deals/companies/&lt;company_id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Update company revenue, employees, name (inline edit)</span></div>
+    </div>
+
+    <div class="prose" style="margin-top:20px;">
+      <h3>Key Response Shape — GET /deals/&lt;id&gt;/levers</h3>
+    </div>
+    <pre><code>{
+  "deal_id": 1,
+  "levers": [{
+    "id": 29, "lever_name": "IT", "lever_type": "cost",
+    "benchmark_pct_low": 0.85, "benchmark_pct_high": 1.93, "benchmark_pct_median": 1.4,
+    "benchmark_n": 7,
+    "calculated_value_low": 4800000, "calculated_value_high": 10900000,
+    "refined_pct_low": 0.85, "refined_pct_high": 1.55,       // null until "Refine ✦" clicked
+    "refinement_rationale": "Deal shows moderate synergy...",
+    "status": "in_analysis",  // identified | in_analysis | validated | excluded
+    "confidence": "medium",   // high | medium | low
+    "advisor_notes": "...",
+    "environment_data": { "What cloud provider does target use?": "AWS" },
+    "assigned_to_id": 2, "assigned_to_name": "Jane Smith",
+    "activities": [{ "id": 1, "description": "...", "value_low": 1000000 }]
+  }],
+  "summary": {
+    "total_cost_synergy_low": 25400000,
+    "total_cost_synergy_high": 38400000,
+    "combined_revenue": 565000000
+  }
+}</code></pre>
+  </section>
+
+  <!-- LEARN ENDPOINTS -->
+  <section class="section" id="api-learn">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Learn / Playbooks Endpoints</h2>
+    </div>
+    <div style="margin-top:4px;">
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/learn</span><span class="endpoint-auth" style="background:#FEF3C7;color:#92400E;">PUBLIC</span><span class="endpoint-desc">List all levers with playbook content — no auth (chatbot reads this)</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/learn/&lt;lever_id&gt;</span><span class="endpoint-auth" style="background:#FEF3C7;color:#92400E;">PUBLIC</span><span class="endpoint-desc">Get single lever + playbook</span></div>
+      <div class="endpoint-row"><span class="method method-put">PUT</span><span class="endpoint-path">/api/learn/&lt;lever_id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Update playbook fields: what_it_is, what_drives_it, diligence_questions, red_flags, team_notes</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/users</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">List all users (for lever assignment dropdown)</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/api/chat</span><span class="endpoint-auth" style="background:#DBEAFE;color:#1D4ED8;">FE ONLY</span><span class="endpoint-desc">Streaming chat — Next.js route handler; fetches /api/learn then calls Anthropic</span></div>
+    </div>
+    <div class="alert alert-info" style="margin-top:16px;">
+      <span class="icon">ℹ️</span>
+      <div><strong>ai SDK v6 breaking changes:</strong> Uses <code>DefaultChatTransport</code>, <code>sendMessage({text})</code>, <code>UIMessage.parts[]</code>, <code>await convertToModelMessages(messages)</code>. The v3 API (<code>input</code>, <code>handleSubmit</code>, <code>isLoading</code>) does NOT work with this version.</div>
+    </div>
+  </section>
+
+  <!-- LEGACY + EXTERNAL -->
+  <section class="section" id="api-legacy">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Legacy Endpoints</h2>
+    </div>
+    <div class="prose"><p>Active but secondary — synergy activities and industry metadata from pre-lever architecture.</p></div>
+    <div style="margin-top:12px;">
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/synergies</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">List synergy activities with filters</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/api/synergies</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Create synergy activity</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/synergies/&lt;id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Get synergy + metrics + workflow transitions</span></div>
+      <div class="endpoint-row"><span class="method method-put">PUT</span><span class="endpoint-path">/api/synergies/&lt;id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Update synergy</span></div>
+      <div class="endpoint-row"><span class="method method-delete">DELETE</span><span class="endpoint-path">/api/synergies/&lt;id&gt;</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Delete synergy</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/industries</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">List / CRUD industries metadata</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/auth/login</span><span class="endpoint-auth">None</span><span class="endpoint-desc">Login → access_token + refresh_token</span></div>
+      <div class="endpoint-row"><span class="method method-post">POST</span><span class="endpoint-path">/api/auth/refresh</span><span class="endpoint-auth">Refresh JWT</span><span class="endpoint-desc">Rotate access token</span></div>
+      <div class="endpoint-row"><span class="method method-get">GET</span><span class="endpoint-path">/api/auth/me</span><span class="endpoint-auth">JWT</span><span class="endpoint-desc">Current user info</span></div>
+    </div>
+  </section>
+
+  <section class="section" id="api-external">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>External APIs</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Call</th><th>From</th><th>Model</th><th>Purpose</th><th>Est. Cost</th></tr></thead>
+        <tbody>
+          <tr><td><strong>Brief extraction</strong></td><td>Backend Python SDK</td><td>claude-haiku-4-5-20251001</td><td>JSON field extraction from unstructured brief</td><td>~$0.002</td></tr>
+          <tr><td><strong>Lever refinement</strong></td><td>Backend Python SDK</td><td>claude-haiku-4-5-20251001</td><td>Deal-specific pct from diligence Q&A</td><td>~$0.001</td></tr>
+          <tr><td><strong>Chat response</strong></td><td>Frontend ai SDK stream</td><td>claude-haiku-4-5-20251001</td><td>Knowledge assistant over playbook content</td><td>~$0.003–0.01</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-warn">
+      <span class="icon">⚠️</span>
+      <div><strong>No circuit breaker, no timeout, no retry logic</strong> on Anthropic calls. Claude API failures propagate as 500 errors. Recommended: add <code>timeout=30</code> to Anthropic client + rate limit AI endpoints at 10/hour.</div>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: TECH STACK                           -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="code-stack">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Tech Stack</h2>
+      <span class="badge">Codebase</span>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Backend Dependencies</div>
+        <div class="table-wrap" style="margin:8px 0 0;">
+          <table>
+            <thead><tr><th>Package</th><th>Version</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td>Flask</td><td>3.0.0</td><td>Web framework</td></tr>
+              <tr><td>Flask-JWT-Extended</td><td>4.6.0</td><td>JWT auth</td></tr>
+              <tr><td>SQLAlchemy</td><td>2.0.23</td><td>ORM</td></tr>
+              <tr><td>gunicorn</td><td>21.2.0</td><td>WSGI server</td></tr>
+              <tr><td>anthropic</td><td>≥0.75.0</td><td>Claude API</td></tr>
+              <tr><td>openpyxl</td><td>≥3.1.0</td><td>Excel export</td></tr>
+              <tr><td>psycopg2-binary</td><td>2.9.9</td><td>Postgres driver</td></tr>
+              <tr><td>Flask-Limiter</td><td>3.5.0</td><td>Rate limiting</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="card">
+        <div class="card-title">Frontend Dependencies</div>
+        <div class="table-wrap" style="margin:8px 0 0;">
+          <table>
+            <thead><tr><th>Package</th><th>Purpose</th></tr></thead>
+            <tbody>
+              <tr><td>next 15.x</td><td>App Router framework</td></tr>
+              <tr><td>@tanstack/react-query 5.x</td><td>Server state + caching</td></tr>
+              <tr><td>@ai-sdk/anthropic ^3.0.50</td><td>Claude streaming (chat)</td></tr>
+              <tr><td>axios</td><td>HTTP client</td></tr>
+              <tr><td>tailwindcss</td><td>Utility CSS</td></tr>
+              <tr><td>lucide-react</td><td>Icons</td></tr>
+              <tr><td>framer-motion</td><td>Animations</td></tr>
+              <tr><td>recharts</td><td>Analytics charts</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- DATABASE SCHEMA -->
+  <section class="section" id="code-schema">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Database Schema</h2>
+    </div>
+    <div class="prose"><h3>Core Business Tables</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Table</th><th>Purpose</th><th>Key Columns</th></tr></thead>
+        <tbody>
+          <tr><td><code>users</code></td><td>Analyst accounts</td><td>email, role (analyst|admin), first_name, last_name</td></tr>
+          <tr><td><code>companies</code></td><td>Acquirer/target</td><td>name, revenue_usd, employees, products (JSON), tech_stack (JSON)</td></tr>
+          <tr><td><code>deals</code></td><td>M&A transactions</td><td>name, deal_type, deal_size_usd, acquirer_id, target_id, status, deal_briefing_document</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose" style="margin-top:16px;"><h3>Lever/Benchmark Tables (Primary System)</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Table</th><th>Purpose</th><th>Key Columns</th></tr></thead>
+        <tbody>
+          <tr><td><code>synergy_levers</code></td><td>Functional buckets</td><td>name (IT|Finance|HR…), lever_type (cost|revenue), sort_order</td></tr>
+          <tr><td><code>benchmark_projects</code></td><td>Comparable deals</td><td>name, combined_revenue_usd, industry</td></tr>
+          <tr><td><code>benchmark_datapoints</code></td><td>project × lever × pct</td><td>project_id, lever_id, synergy_pct (% of combined rev)</td></tr>
+          <tr><td><code>deal_levers</code> ⭐</td><td>Primary output per deal</td><td>benchmark_pct_low/high/median, refined_pct_low/high, calculated_value_low/high, status, confidence, environment_data (JSONB), assigned_to_id</td></tr>
+          <tr><td><code>lever_comments</code></td><td>Comment threads</td><td>deal_lever_id, user_id, body, created_at</td></tr>
+          <tr><td><code>lever_playbooks</code></td><td>Methodology workspace</td><td>lever_id, what_it_is, what_drives_it, diligence_questions (JSON), red_flags (JSON), team_notes</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- CODING PATTERNS -->
+  <section class="section" id="code-patterns">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Coding Patterns</h2>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Backend — Blueprint Pattern</div>
+        <pre style="margin:8px 0 0;"><code>from flask import Blueprint
+bp = Blueprint('deals', __name__, url_prefix='/api/deals')
+
+@bp.route('/&lt;int:deal_id&gt;/levers', methods=['GET'])
+@require_role('analyst', 'admin')
+def get_deal_levers(deal_id):
+    ...</code></pre>
+      </div>
+      <div class="card">
+        <div class="card-title">Backend — Auth + Error Handling</div>
+        <pre style="margin:8px 0 0;"><code>from flask_jwt_extended import get_jwt_identity
+user_id = int(get_jwt_identity())  # must cast to int
+
+try:
+    db.session.commit()
+    return jsonify(result), 200
+except Exception as e:
+    db.session.rollback()
+    logger.error(f"...: {e}", exc_info=True)
+    return jsonify({'error': 'Internal server error'}), 500</code></pre>
+      </div>
+      <div class="card">
+        <div class="card-title">Frontend — React Query</div>
+        <pre style="margin:8px 0 0;"><code>const { data, isLoading } = useQuery({
+  queryKey: ['deal-levers', dealId],
+  queryFn: () => dealsApi.getLevers(dealId),
+  enabled: !!dealId,
+});
+
+// Invalidate after mutation:
+queryClient.invalidateQueries(
+  { queryKey: ['deal-levers', dealId] }
+);</code></pre>
+      </div>
+      <div class="card">
+        <div class="card-title">Frontend — Optimistic UI</div>
+        <pre style="margin:8px 0 0;"><code>const prev = currentStatus;
+setCurrentStatus(newStatus); // optimistic
+try {
+  const updated = await dealsApi.updateLever(
+    lever.deal_id, lever.id, { status: newStatus }
+  );
+  onUpdated?.(updated);
+} catch {
+  setCurrentStatus(prev); // rollback
+}</code></pre>
+      </div>
+    </div>
+    <div class="alert alert-warn" style="margin-top:16px;">
+      <span class="icon">⚠️</span>
+      <div><strong>Import prefix is mandatory:</strong> Always use <code>from backend.app.models.lever import DealLever</code> — never <code>from app.models.lever import DealLever</code>. The pre-flight validator blocks writes that use the wrong prefix.</div>
+    </div>
+  </section>
+
+  <!-- TECH DEBT -->
+  <section class="section" id="code-debt">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Technical Debt Register</h2>
+    </div>
+    <div class="table-wrap">
+      <table class="debt-row">
+        <thead><tr><th>Item</th><th>Severity</th><th>Effort</th><th>Impact</th></tr></thead>
+        <tbody>
+          <tr><td>Fake benchmark data (7 synthetic deals)</td><td><span class="pill pill-amber">🟠 High</span></td><td>2 weeks</td><td>All estimates are fabricated comparables — product credibility risk</td></tr>
+          <tr><td>Sync AI calls block Gunicorn threads</td><td><span class="pill pill-amber">🟡 Medium</span></td><td>1 week</td><td>~2s per call; thread exhaustion at scale; needs async queue</td></tr>
+          <tr><td>No Alembic migrations (manual ALTER TABLE)</td><td><span class="pill pill-amber">🟡 Medium</span></td><td>1 week</td><td>Schema changes require psql access; no history or rollback</td></tr>
+          <tr><td>No circuit breaker on Anthropic calls</td><td><span class="pill pill-amber">🟡 Medium</span></td><td>2 days</td><td>Claude failures propagate as 500s; no retry or fallback</td></tr>
+          <tr><td>Duplicate model defs in backup dirs</td><td><span class="pill pill-gray">🟢 Low</span></td><td>1 day</td><td>Confusing, inflates file count; drift_history.json shows 31 dupes</td></tr>
+          <tr><td>Legacy synergy tables rarely used</td><td><span class="pill pill-gray">🟢 Low</span></td><td>2 days</td><td>Dead weight; could be archived</td></tr>
+          <tr><td>No API versioning</td><td><span class="pill pill-gray">🟢 Low</span></td><td>3 days</td><td>Breaking backend changes would directly affect frontend</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- ══════════════════════════════════════════════ -->
+  <!-- SECTION: DEPLOYMENT                           -->
+  <!-- ══════════════════════════════════════════════ -->
+  <section class="section" id="deploy-envs">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Environments</h2>
+      <span class="badge">Deployment</span>
+    </div>
+    <div class="card-grid">
+      <div class="card">
+        <div class="card-title">Production</div>
+        <p><strong>Backend:</strong> <a href="https://backend-production-b4cc.up.railway.app" target="_blank">backend-production-b4cc.up.railway.app</a></p>
+        <p><strong>Frontend:</strong> <a href="https://frontend-production-e530.up.railway.app" target="_blank">frontend-production-e530.up.railway.app</a></p>
+        <p><strong>DB Proxy:</strong> <code>maglev.proxy.rlwy.net:47787</code></p>
+        <p><strong>Project ID:</strong> <code>cef2a37f-4313-4974-8d59-77f6325bdd54</code></p>
+        <p><strong>Demo:</strong> demo@synergies.ai / Demo1234!</p>
+      </div>
+      <div class="card">
+        <div class="card-title">Local Development</div>
+        <p><strong>Backend:</strong> <code>http://localhost:5001</code></p>
+        <p><strong>Frontend:</strong> <code>http://localhost:3000</code> (<code>npm run dev</code>)</p>
+        <p><strong>Database:</strong> Same Railway Postgres via TCP proxy</p>
+        <p><strong>Env file:</strong> <code>frontend/.env.local</code></p>
+        <pre style="margin-top:8px;"><code>NEXT_PUBLIC_API_URL=http://localhost:5001/api</code></pre>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="deploy-commands">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Deploy Commands</h2>
+    </div>
+    <pre><code># Deploy BACKEND (from /Users/JB/Documents/Synergies)
+railway up --detach
+
+# Deploy FRONTEND (from /Users/JB/Documents/Synergies/frontend)
+cd frontend && railway up --detach
+
+# ⚠️ Context matters: railway up deploys whichever service is linked to CWD
+# Backend is linked to root; frontend is linked to frontend/</code></pre>
+    <div class="table-wrap" style="margin-top:16px;">
+      <table>
+        <thead><tr><th>Service</th><th>Railway ID</th><th>Builder</th><th>Deploy from</th></tr></thead>
+        <tbody>
+          <tr><td>Backend</td><td><code>1515a398-e2d2-45c5-8b1f-cce1d6f85535</code></td><td>Dockerfile</td><td>project root</td></tr>
+          <tr><td>Frontend</td><td><code>8476b699-ce8f-4bcb-883a-ebc333fc7dd4</code></td><td>Nixpacks</td><td><code>frontend/</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="section" id="deploy-env-vars">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Environment Variables</h2>
+    </div>
+    <div class="prose"><h3>Backend Service</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Variable</th><th>Purpose</th><th>How to set</th></tr></thead>
+        <tbody>
+          <tr><td><code>DATABASE_URL</code></td><td>PostgreSQL connection string</td><td>Auto-set by Railway when Postgres is linked</td></tr>
+          <tr><td><code>JWT_SECRET_KEY</code></td><td>JWT signing key</td><td><code>railway variables set JWT_SECRET_KEY=...</code></td></tr>
+          <tr><td><code>SECRET_KEY</code></td><td>Flask session key</td><td><code>railway variables set SECRET_KEY=...</code></td></tr>
+          <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Claude (brief extraction + refine)</td><td><code>railway variables set ANTHROPIC_API_KEY=sk-ant-...</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="prose" style="margin-top:16px;"><h3>Frontend Service</h3></div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Variable</th><th>Purpose</th><th>How to set</th></tr></thead>
+        <tbody>
+          <tr><td><code>NEXT_PUBLIC_API_URL</code></td><td>Backend URL</td><td><code>railway variables --service frontend set NEXT_PUBLIC_API_URL=...</code></td></tr>
+          <tr><td><code>ANTHROPIC_API_KEY</code></td><td>Claude (chat route)</td><td><code>railway variables --service frontend set ANTHROPIC_API_KEY=sk-ant-...</code></td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="alert alert-bad" style="margin-top:12px;">
+      <span class="icon">🔴</span>
+      <div><strong>ANTHROPIC_API_KEY must be set on BOTH services independently.</strong> Missing on frontend = chat 500. Missing on backend = brief extraction and refine 500. Variable name must be clean — no leading spaces, no emoji prefix.</div>
+    </div>
+  </section>
+
+  <section class="section" id="deploy-schema">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Schema Migrations</h2>
+    </div>
+    <div class="alert alert-warn">
+      <span class="icon">⚠️</span>
+      <div><strong>Critical:</strong> <code>db.create_all()</code> in releaseCommand only creates NEW tables. It silently ignores existing tables and will NOT run ALTER TABLE. All column additions must be applied manually.</div>
+    </div>
+    <pre style="margin-top:12px;"><code># Connect directly to Railway Postgres
+psql "postgresql://postgres:&lt;password&gt;@maglev.proxy.rlwy.net:47787/railway"
+
+# Add new column (safe — IF NOT EXISTS prevents errors on re-run)
+ALTER TABLE deal_levers
+  ADD COLUMN IF NOT EXISTS my_new_col TEXT;
+
+# Verify
+SELECT column_name, data_type
+FROM information_schema.columns
+WHERE table_name = 'deal_levers'
+ORDER BY ordinal_position;</code></pre>
+  </section>
+
+  <section class="section" id="deploy-issues">
+    <div class="section-header">
+      <div class="section-accent"></div>
+      <h2>Known Deployment Issues</h2>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Issue</th><th>Symptom</th><th>Root Cause</th><th>Fix</th></tr></thead>
+        <tbody>
+          <tr><td><strong>releaseCommand exits non-zero</strong></td><td>Deploy permanently blocked</td><td>Python import error in create_app</td><td>Fix import + redeploy; always have <code>|| echo 'deferred'</code> fallback</td></tr>
+          <tr><td><strong>$PORT not expanding</strong></td><td>500 on all requests</td><td>Dockerfile CMD uses exec form</td><td>Ensure CMD calls start.sh (shell form required)</td></tr>
+          <tr><td><strong>Models not found at startup</strong></td><td>500 on first query</td><td>SQLAlchemy mapper init fails silently</td><td>Import ALL models in <code>__init__.py</code> model block</td></tr>
+          <tr><td><strong>Chat returning 500</strong></td><td>/api/chat fails</td><td>ANTHROPIC_API_KEY missing on frontend</td><td><code>railway variables --service frontend set ANTHROPIC_API_KEY=sk-ant-...</code></td></tr>
+          <tr><td><strong>Brief extraction 500</strong></td><td>populate-from-brief fails</td><td>ANTHROPIC_API_KEY missing on backend</td><td><code>railway variables set ANTHROPIC_API_KEY=sk-ant-...</code></td></tr>
+          <tr><td><strong>openpyxl ImportError</strong></td><td>Excel export 500</td><td>Package only in backend/requirements.txt</td><td>Add to root <code>/requirements.txt</code> (what Dockerfile installs)</td></tr>
+          <tr><td><strong>JWT 422 on login</strong></td><td>Login returns 422</td><td>identity stored as int not string</td><td>Use <code>identity=str(user.id)</code> in auth_routes.py</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+</div><!-- end #main -->
+
+<script>
+  // Mermaid init
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: 'default',
+    themeVariables: {
+      primaryColor: '#FEF3EE',
+      primaryBorderColor: '#D04A02',
+      primaryTextColor: '#111827',
+      lineColor: '#9CA3AF',
+    },
+    flowchart: { curve: 'basis', useMaxWidth: true },
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif',
+  });
+
+  // Progress bar
+  window.addEventListener('scroll', () => {
+    const scrolled = window.scrollY;
+    const total = document.documentElement.scrollHeight - window.innerHeight;
+    document.getElementById('progress').style.width = (scrolled / total * 100) + '%';
+  });
+
+  // Active nav link
+  const sections = document.querySelectorAll('section[id]');
+  const navLinks = document.querySelectorAll('.nav-link');
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach(entry => {
+      if (entry.isIntersecting) {
+        navLinks.forEach(l => l.classList.remove('active'));
+        const active = document.querySelector(`.nav-link[href="#${entry.target.id}"]`);
+        if (active) active.classList.add('active');
+      }
+    });
+  }, { rootMargin: '-20% 0px -70% 0px' });
+  sections.forEach(s => observer.observe(s));
+
+  // Smooth scroll
+  navLinks.forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const target = document.querySelector(link.getAttribute('href'));
+      if (target) target.scrollIntoView({ behavior: 'smooth' });
+    });
+  });
+</script>
+</body>
+</html>

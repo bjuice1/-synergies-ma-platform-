@@ -28,6 +28,7 @@ export interface Deal {
   acquirer?: Company;
   target?: Company;
   status: 'draft' | 'active' | 'closed' | 'cancelled';
+  deal_briefing_document?: string | null;
   created_at: string;
   updated_at: string;
   // Optional expanded fields
@@ -288,7 +289,40 @@ export interface DealLever {
   status: 'identified' | 'in_analysis' | 'validated' | 'excluded';
   confidence: 'high' | 'medium' | 'low';
   advisor_notes?: string;
+  environment_data?: Record<string, string>;
   activities: SynergyActivity[];
+  assigned_to_id?: number | null;
+  assigned_to_name?: string | null;
+  refined_pct_low?: number | null;
+  refined_pct_high?: number | null;
+  refinement_rationale?: string | null;
+}
+
+export interface LeverComment {
+  id: number;
+  deal_lever_id: number;
+  user_id: number;
+  author_name: string;
+  body: string;
+  created_at: string;
+}
+
+// Context passed from a deal lever to the AI chat
+export interface DealChatContext {
+  deal_name: string;
+  acquirer_name: string;
+  acquirer_revenue: number | null;
+  target_name: string;
+  target_revenue: number | null;
+  lever_name: string;
+  lever_type: string;
+  value_low: number;
+  value_high: number;
+  pct_low: number;
+  pct_high: number;
+  benchmark_n: number;
+  environment_data: Record<string, string>;
+  subtypes: Array<{ name: string; typical_pct: number; description: string }>;
 }
 
 export interface DealLeversResponse {
