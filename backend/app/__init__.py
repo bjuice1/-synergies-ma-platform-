@@ -184,6 +184,15 @@ def create_app(config_name=None):
     except Exception as e:
         logger.error(f"❌ Users routes error: {e}")
 
+    try:
+        from backend.routes.benchmarks_routes import bp as benchmarks_bp
+        app.register_blueprint(benchmarks_bp)
+        logger.info("✅ Benchmarks routes registered")
+    except ImportError:
+        logger.warning("⚠️  Benchmarks routes not found - skipping")
+    except Exception as e:
+        logger.error(f"❌ Benchmarks routes error: {e}")
+
     # Import ALL models to register with SQLAlchemy metadata.
     # Every model with a relationship() must be imported before any query runs,
     # otherwise mapper configuration fails at runtime.

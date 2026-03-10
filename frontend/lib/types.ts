@@ -333,6 +333,36 @@ export interface DealChatContext {
   subtypes: Array<{ name: string; typical_pct: number; description: string }>;
 }
 
+export interface BenchmarkProject {
+  id: number;
+  name: string;
+  deal_size_usd?: number;
+  combined_revenue_usd?: number;
+  industry?: string;
+  deal_type?: string;
+  close_year?: number;
+  total_synergy_pct?: number;
+  source?: string;
+}
+
+export interface BenchmarkSummary {
+  total_projects: number;
+  filtered_count: number;
+  available_industries: { name: string; count: number }[];
+  deal_size_range: { min: number | null; max: number | null };
+  year_range: { min: number | null; max: number | null };
+  projects: BenchmarkProject[];
+  filtered_projects: BenchmarkProject[];
+}
+
+export interface CompFilters {
+  industries?: string[];
+  deal_size_min?: number;
+  deal_size_max?: number;
+  year_min?: number;
+  year_max?: number;
+}
+
 export interface DealLeversResponse {
   deal_id: number;
   levers: DealLever[];

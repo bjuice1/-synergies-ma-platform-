@@ -20,6 +20,8 @@ import type {
   LeverWithPlaybook,
   LeverComment,
   User,
+  BenchmarkSummary,
+  CompFilters,
 } from './types';
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5001/api';
@@ -260,6 +262,11 @@ export const dealsApi = {
     return response.data;
   },
 
+  regenerateLevers: async (dealId: number, filters?: CompFilters): Promise<DealLeversResponse> => {
+    const response = await api.post<DealLeversResponse>(`/deals/${dealId}/regenerate-levers`, filters || {});
+    return response.data;
+  },
+
   exportExcel: async (dealId: number, dealName: string): Promise<void> => {
     const response = await api.get(`/deals/${dealId}/export/excel`, { responseType: 'blob' });
     const url = URL.createObjectURL(new Blob([response.data]));
@@ -268,6 +275,21 @@ export const dealsApi = {
     a.download = `${dealName.replace(/[^a-z0-9]/gi, '_')}_synergy_analysis.xlsx`;
     a.click();
     URL.revokeObjectURL(url);
+  },
+};
+
+// Benchmarks API
+export const benchmarksApi = {
+  getSummary: async (filters?: CompFilters): Promise<BenchmarkSummary> => {
+    const params = new URLSearchParams();
+    if (filters?.industries?.length) params.append('industries', filters.industries.join(','));
+    if (filters?.deal_size_min != null) params.append('deal_size_min', String(filters.deal_size_min));
+    if (filters?.deal_size_max != null) params.append('deal_size_max', String(filters.deal_size_max));
+    if (filters?.year_min != null) params.append('year_min', String(filters.year_min));
+    if (filters?.year_max != null) params.append('year_max', String(filters.year_max));
+    const qs = params.toString();
+    const response = await api.get<BenchmarkSummary>(`/benchmarks${qs ? `?${qs}` : ''}`);
+    return response.data;
   },
 };
 

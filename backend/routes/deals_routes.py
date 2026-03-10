@@ -53,19 +53,28 @@ LEVER_ACTIVITY_TEMPLATES: dict = {
 }
 
 
-def auto_generate_deal_levers(deal, acquirer, target):
+def auto_generate_deal_levers(deal, acquirer, target, comp_filters=None):
     """
     Auto-generate DealLever rows for a new deal using benchmark averages.
 
-    Uses all BenchmarkDataPoints to compute pct_low = min, pct_high = max,
-    pct_median = mean for each lever. calculated_value = combined_revenue * pct / 100.
+    Uses BenchmarkDataPoints (optionally filtered by comp_filters) to compute
+    the IQR range (P25–P75) per lever. calculated_value derives from IQR range.
+    Realization layer (75% default) produces realizable_value.
 
     Also creates 3 templated Synergy activity records per lever so analysts
     immediately see specific ideas rather than an empty card.
 
     Revenue lever is skipped if no datapoints exist.
     Never raises — lever gen failure must not break deal creation.
+
+    comp_filters (dict, optional):
+        industries: list of industry strings
+        deal_size_min: int (combined_revenue_usd)
+        deal_size_max: int
+        year_min: int (close_year)
+        year_max: int
     """
+    from backend.app.models.lever import BenchmarkProject
     try:
         combined_revenue = 0
         if acquirer and acquirer.revenue_usd:
@@ -74,9 +83,41 @@ def auto_generate_deal_levers(deal, acquirer, target):
             combined_revenue += target.revenue_usd
 
         levers = SynergyLever.query.order_by(SynergyLever.sort_order).all()
-        benchmark_n_result = db.session.query(
+
+        # Build filtered project ID set if filters provided
+        filtered_project_ids = None
+        if comp_filters:
+            proj_query = BenchmarkProject.query
+            if comp_filters.get('industries'):
+                proj_query = proj_query.filter(
+                    BenchmarkProject.industry.in_(comp_filters['industries'])
+                )
+            if comp_filters.get('deal_size_min') is not None:
+                proj_query = proj_query.filter(
+                    BenchmarkProject.combined_revenue_usd >= comp_filters['deal_size_min']
+                )
+            if comp_filters.get('deal_size_max') is not None:
+                proj_query = proj_query.filter(
+                    BenchmarkProject.combined_revenue_usd <= comp_filters['deal_size_max']
+                )
+            if comp_filters.get('year_min') is not None:
+                proj_query = proj_query.filter(
+                    BenchmarkProject.close_year >= comp_filters['year_min']
+                )
+            if comp_filters.get('year_max') is not None:
+                proj_query = proj_query.filter(
+                    BenchmarkProject.close_year <= comp_filters['year_max']
+                )
+            filtered_project_ids = [p.id for p in proj_query.all()]
+
+        benchmark_n_query = db.session.query(
             func.count(db.distinct(BenchmarkDataPoint.project_id))
-        ).scalar() or 0
+        )
+        if filtered_project_ids is not None:
+            benchmark_n_query = benchmark_n_query.filter(
+                BenchmarkDataPoint.project_id.in_(filtered_project_ids)
+            )
+        benchmark_n_result = benchmark_n_query.scalar() or 0
 
         def _pct(data, p):
             """Linear interpolation percentile on a sorted list."""
@@ -91,12 +132,14 @@ def auto_generate_deal_levers(deal, acquirer, target):
             if existing:
                 continue
 
-            pct_values = [
-                row[0] for row in
-                db.session.query(BenchmarkDataPoint.synergy_pct)
-                .filter(BenchmarkDataPoint.lever_id == lever.id)
-                .all()
-            ]
+            dp_query = db.session.query(BenchmarkDataPoint.synergy_pct).filter(
+                BenchmarkDataPoint.lever_id == lever.id
+            )
+            if filtered_project_ids is not None:
+                dp_query = dp_query.filter(
+                    BenchmarkDataPoint.project_id.in_(filtered_project_ids)
+                )
+            pct_values = [row[0] for row in dp_query.all()]
 
             if not pct_values:
                 continue
@@ -790,6 +833,54 @@ Return ONLY a JSON object. No markdown, no explanation. Format:
         db.session.rollback()
         logger.error(f"Error populating brief for deal {deal_id}: {e}", exc_info=True)
         return jsonify({'error': 'Internal server error'}), 500
+
+
+@bp.route('/<int:deal_id>/regenerate-levers', methods=['POST'])
+@require_role('analyst', 'admin')
+def regenerate_levers(deal_id):
+    """
+    Delete existing DealLever rows and regenerate with optional comp filters.
+
+    Body (JSON, all optional):
+        industries: list of industry strings  e.g. ["Technology"]
+        deal_size_min: int  (combined_revenue_usd)
+        deal_size_max: int
+        year_min: int  (close_year)
+        year_max: int
+    """
+    try:
+        deal = Deal.query.get_or_404(deal_id)
+        acquirer = Company.query.get(deal.acquirer_id)
+        target = Company.query.get(deal.target_id)
+
+        body = request.get_json(silent=True) or {}
+        comp_filters = {}
+        if body.get('industries'):
+            comp_filters['industries'] = body['industries']
+        if body.get('deal_size_min') is not None:
+            comp_filters['deal_size_min'] = int(body['deal_size_min'])
+        if body.get('deal_size_max') is not None:
+            comp_filters['deal_size_max'] = int(body['deal_size_max'])
+        if body.get('year_min') is not None:
+            comp_filters['year_min'] = int(body['year_min'])
+        if body.get('year_max') is not None:
+            comp_filters['year_max'] = int(body['year_max'])
+
+        # Delete all existing levers (and their activities + comments via cascade)
+        DealLever.query.filter_by(deal_id=deal_id).delete()
+        db.session.flush()
+
+        # Regenerate with new comp set
+        auto_generate_deal_levers(deal, acquirer, target,
+                                   comp_filters=comp_filters if comp_filters else None)
+        db.session.commit()
+
+        return get_deal_levers(deal_id)
+
+    except Exception as e:
+        db.session.rollback()
+        logger.error(f"Error regenerating levers for deal {deal_id}: {e}", exc_info=True)
+        return jsonify({'error': str(e)}), 500
 
 
 @bp.route('/<int:deal_id>/generate-synergies', methods=['POST'])

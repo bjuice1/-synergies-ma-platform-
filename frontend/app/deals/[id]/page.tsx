@@ -7,10 +7,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { useDeal } from '@/hooks/useDeals';
 import { dealsApi, learnApi, companiesApi } from '@/lib/api';
 import { LeverCard } from '@/components/levers/LeverCard';
+import CompSetPanel from '@/components/deals/CompSetPanel';
 import { Button } from '@/components/ui/button';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { ArrowLeft, TrendingUp, Database, MessageSquare, FileText, Sparkles, ChevronDown, ChevronUp, AlertCircle, Download, Pencil, Check, X, Users } from 'lucide-react';
-import type { DealPerspective } from '@/lib/types';
+import type { DealPerspective, DealLeversResponse } from '@/lib/types';
 import { formatCompactNumber } from '@/lib/utils';
 
 const NAV_LINKS = [
@@ -146,6 +147,10 @@ export default function DealDetailPage({ params }: { params: { id: string } }) {
     } finally {
       setPopulatingBrief(false);
     }
+  }
+
+  function handleLeversUpdated(newData: DealLeversResponse) {
+    queryClient.setQueryData(['deal-levers', dealId], newData);
   }
 
   async function handleGenerateProfile() {
@@ -462,6 +467,15 @@ export default function DealDetailPage({ params }: { params: { id: string } }) {
               </div>
             </div>
           </div>
+        )}
+
+        {/* Comp set panel */}
+        {summary && (
+          <CompSetPanel
+            dealId={dealId}
+            currentN={summary.benchmark_n}
+            onLeversUpdated={handleLeversUpdated}
+          />
         )}
 
         {/* Auto-populate from brief banner */}
